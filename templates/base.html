@@ -113,7 +113,7 @@
                     {% endif %}
                     {% endwith %}
                 </ul>
-                {% if request.session.user_id %}
+                {% if request.user.is_authenticated %}
                 <a class="btn btn-danger btn-sm ms-lg-auto" href="{% url 'user_html:logout' %}">
                     <i class="fas fa-sign-out-alt me-1"></i>Cerrar sesión
                 </a>
