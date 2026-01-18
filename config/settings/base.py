@@ -33,9 +33,14 @@ load_dotenv(BASE_DIR / ".env")
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "unsafe-development-key")
 DEBUG = os.getenv("DJANGO_DEBUG", "true").lower() == "true"
 
+# Nota: el valor por defecto incluye el dominio de Render para evitar errores
+# cuando no se dispone de variables de entorno (solo útil en entornos de prueba).
 ALLOWED_HOSTS = [
     host.strip()
-    for host in os.getenv("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
+    for host in os.getenv(
+        "DJANGO_ALLOWED_HOSTS",
+        "127.0.0.1,localhost,oftalmetryc-django.onrender.com",
+    ).split(",")
     if host.strip()
 ]
 
