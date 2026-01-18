@@ -1,0 +1,351 @@
+{% extends "base.html" %}
+
+{% block title %}Registrar Venta - Oftalmetryc{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+        <h2 class="mb-0">Registrar Nueva Venta</h2>
+        <a href="{% url 'sale_html:historial_ventas_page' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-history me-1"></i>Historial
+        </a>
+    </div>
+
+    <form action="{% url 'sale_html:revisar_venta_page' %}" method="POST" id="sale-form">
+        {% csrf_token %}
+        <input type="hidden" name="pedido_items" id="pedido_items_json">
+
+        <div class="card mb-3 shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="fas fa-file-invoice me-2"></i>Datos de la venta</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">N° Factura</label>
+                        <input type="text" class="form-control" name="numero_factura" placeholder="001-001-000000000">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Ciudad</label>
+                        <input type="text" class="form-control" name="ciudad" placeholder="Guayaquil">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Fecha</label>
+                        <input type="date" class="form-control" name="fecha_venta" value="{{ today|default:'' }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Observaciones</label>
+                        <input type="text" class="form-control" name="observaciones" placeholder="Notas internas">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-3 shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="fas fa-user me-2"></i>Datos del cliente/paciente</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">RUC / C.I.</label>
+                        <input type="text" class="form-control" name="cliente_rut" placeholder="Número de documento">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Nombres</label>
+                        <input type="text" class="form-control" name="cliente_nombres">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Apellido Paterno</label>
+                        <input type="text" class="form-control" name="cliente_ap_pat">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Apellido Materno</label>
+                        <input type="text" class="form-control" name="cliente_ap_mat">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Teléfono</label>
+                        <input type="text" class="form-control" name="cliente_telefono">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" name="cliente_email">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Dirección</label>
+                        <input type="text" class="form-control" name="cliente_direccion">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-3">
+            <div class="card-header bg-primary text-white">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <h5 class="mb-0"><i class="fas fa-list-alt me-2"></i>Detalle del Pedido</h5>
+                    <button type="button" id="btn-add-product" class="btn btn-light btn-sm" onclick="agregarFilaProducto()">
+                        <i class="fas fa-plus me-2"></i>Agregar línea
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th style="width: 24%;">Producto</th>
+                                <th style="width: 8%;" class="text-center">Cant.</th>
+                                <th style="width: 10%;" class="text-end">Precio unit.</th>
+                                <th style="width: 12%;" class="text-center">Tarifa IVA</th>
+                                <th style="width: 11%;" class="text-end">Descuento</th>
+                                <th style="width: 12%;">Código principal</th>
+                                <th style="width: 12%;">Código auxiliar</th>
+                                <th style="width: 12%;" class="text-end">Total línea</th>
+                                <th class="text-center">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pedido-items-container"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-lg-6">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0"><i class="fas fa-calculator me-2"></i>Resumen de totales</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Subtotal (15%)</span><strong id="subtotal15">0.00</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Subtotal (5%)</span><strong id="subtotal5">0.00</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Subtotal (0%)</span><strong id="subtotal0">0.00</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Descuento total</span><strong id="descuentoTotal">0.00</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>IVA 15%</span><strong id="iva15">0.00</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>IVA 5%</span><strong id="iva5">0.00</strong>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="fw-bold">Total a pagar</span><strong id="totalPagar" class="fw-bold">0.00</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Saldo</span><strong id="saldo" class="text-primary">0.00</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0"><i class="fas fa-credit-card me-2"></i>Proceso de pago</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Forma de pago</label>
+                                <select name="metodo_pago" class="form-select">
+                                    <option value="efectivo">Efectivo</option>
+                                    <option value="tarjeta">Tarjeta</option>
+                                    <option value="transferencia">Transferencia</option>
+                                    <option value="mixto">Mixto</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Abono</label>
+                                <input type="number" min="0" step="0.01" class="form-control" name="abono" value="0" id="abono-input">
+                            </div>
+                        </div>
+                        <div class="alert alert-info mt-3 mb-0">
+                            <small>El saldo se calcula automáticamente según el total de la venta menos el abono ingresado.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-end">
+            <a href="{% url 'sale_html:registrar_venta_page' %}" class="btn btn-outline-secondary me-2">Limpiar</a>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-arrow-right me-2"></i>Revisar venta
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const productsData = JSON.parse({{ products_json|safe }});
+
+    function buildProductOptions() {
+        return ['<option value=\"\">Seleccione</option>']
+            .concat(productsData.map(p => `<option value=\"${p.producto_id}\" data-precio=\"${p.precio_unitario}\" data-codigo=\"${p.codigo || ''}\">${p.nombre}</option>`))
+            .join('');
+    }
+
+    function agregarFilaProducto() {
+        const tbody = document.getElementById('pedido-items-container');
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>
+                <select class="form-select producto-select" required>
+                    ${buildProductOptions()}
+                </select>
+            </td>
+            <td><input type="number" min="1" step="1" class="form-control text-center cantidad-input" value="1"></td>
+            <td><input type="number" min="0" step="0.01" class="form-control text-end precio-input" value="0"></td>
+            <td>
+                <select class="form-select tarifa-input">
+                    <option value="0">0%</option>
+                    <option value="0.05">5%</option>
+                    <option value="0.15" selected>15%</option>
+                </select>
+            </td>
+            <td><input type="number" min="0" step="0.01" class="form-control text-end descuento-input" value="0"></td>
+            <td><input type="text" class="form-control codigo-principal-input" placeholder="Código"></td>
+            <td><input type="text" class="form-control codigo-auxiliar-input" placeholder="Código auxiliar"></td>
+            <td class="text-end fw-bold total-linea">0.00</td>
+            <td class="text-center">
+                <button type="button" class="btn btn-outline-danger btn-sm" onclick="eliminarFilaProducto(this)">
+                    <i class="fas fa-times"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+        attachRowEvents(row);
+        recalcularTotales();
+    }
+
+    function eliminarFilaProducto(button) {
+        const row = button.closest('tr');
+        if (row) {
+            row.remove();
+            recalcularTotales();
+        }
+    }
+
+    function attachRowEvents(row) {
+        const selectProducto = row.querySelector('.producto-select');
+        const precioInput = row.querySelector('.precio-input');
+
+        selectProducto.addEventListener('change', () => {
+            const selected = selectProducto.selectedOptions[0];
+            if (selected && selected.dataset.precio) {
+                if (!precioInput.value || parseFloat(precioInput.value) === 0) {
+                    precioInput.value = parseFloat(selected.dataset.precio).toFixed(2);
+                }
+                const codigoPrincipal = row.querySelector('.codigo-principal-input');
+                if (codigoPrincipal && !codigoPrincipal.value) {
+                    codigoPrincipal.value = selected.dataset.codigo || '';
+                }
+            }
+            recalcularTotales();
+        });
+
+        row.querySelectorAll('input, select').forEach(el => {
+            if (!el.classList.contains('producto-select')) {
+                el.addEventListener('input', recalcularTotales);
+                el.addEventListener('change', recalcularTotales);
+            }
+        });
+    }
+
+    function recalcularTotales() {
+        let subtotal15 = 0, subtotal5 = 0, subtotal0 = 0;
+        let descuentoTotal = 0, iva15 = 0, iva5 = 0;
+        const rows = document.querySelectorAll('#pedido-items-container tr');
+
+        rows.forEach(row => {
+            const qty = parseFloat(row.querySelector('.cantidad-input').value || 0);
+            const price = parseFloat(row.querySelector('.precio-input').value || 0);
+            const tarifa = parseFloat(row.querySelector('.tarifa-input').value || 0);
+            const descuento = parseFloat(row.querySelector('.descuento-input').value || 0);
+
+            const base = qty * price;
+            const baseDesc = Math.max(base - descuento, 0);
+            const iva = baseDesc * tarifa;
+            const totalLinea = baseDesc + iva;
+
+            descuentoTotal += descuento;
+            if (tarifa === 0.15) {
+                subtotal15 += baseDesc;
+                iva15 += iva;
+            } else if (tarifa === 0.05) {
+                subtotal5 += baseDesc;
+                iva5 += iva;
+            } else {
+                subtotal0 += baseDesc;
+            }
+
+            row.querySelector('.total-linea').textContent = totalLinea.toFixed(2);
+        });
+
+        const totalPagar = subtotal15 + subtotal5 + subtotal0 + iva15 + iva5;
+        const abono = parseFloat(document.getElementById('abono-input').value || 0);
+        const saldo = Math.max(totalPagar - abono, 0);
+
+        document.getElementById('subtotal15').textContent = subtotal15.toFixed(2);
+        document.getElementById('subtotal5').textContent = subtotal5.toFixed(2);
+        document.getElementById('subtotal0').textContent = subtotal0.toFixed(2);
+        document.getElementById('descuentoTotal').textContent = descuentoTotal.toFixed(2);
+        document.getElementById('iva15').textContent = iva15.toFixed(2);
+        document.getElementById('iva5').textContent = iva5.toFixed(2);
+        document.getElementById('totalPagar').textContent = totalPagar.toFixed(2);
+        document.getElementById('saldo').textContent = saldo.toFixed(2);
+        document.getElementById('total-general').textContent = totalPagar.toFixed(2);
+
+        serializarPedido();
+    }
+
+    function serializarPedido() {
+        const items = [];
+        const rows = document.querySelectorAll('#pedido-items-container tr');
+
+        rows.forEach(row => {
+            const productoId = row.querySelector('.producto-select').value;
+            if (!productoId) {
+                return;
+            }
+            items.push({
+                producto_id: productoId,
+                cantidad: row.querySelector('.cantidad-input').value || 0,
+                precio_unitario: row.querySelector('.precio-input').value || 0,
+                tarifa_iva: row.querySelector('.tarifa-input').value || 0,
+                descuento: row.querySelector('.descuento-input').value || 0,
+                codigo_principal: row.querySelector('.codigo-principal-input').value || "",
+                codigo_auxiliar: row.querySelector('.codigo-auxiliar-input').value || "",
+                total_linea: row.querySelector('.total-linea').textContent || "0"
+            });
+        });
+        document.getElementById('pedido_items_json').value = JSON.stringify(items);
+    }
+
+    document.getElementById('sale-form').addEventListener('submit', (event) => {
+        const rows = document.querySelectorAll('#pedido-items-container tr');
+        if (!rows.length) {
+            event.preventDefault();
+            alert("Debes agregar al menos un producto.");
+            return false;
+        }
+        serializarPedido();
+    });
+
+    document.getElementById('abono-input').addEventListener('input', recalcularTotales);
+
+    document.addEventListener('DOMContentLoaded', () => {
+        agregarFilaProducto();
+        recalcularTotales();
+    });
+</script>
+{% endblock %}

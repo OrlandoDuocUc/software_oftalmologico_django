@@ -1,0 +1,632 @@
+{% extends "base.html" %}
+
+{% block title %}Proveedores - Oftalmetryc{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ESTILOS ESPECÍFICOS PARA PROVEEDORES */
+.provider-code { 
+    font-family: 'Courier New', monospace; 
+    font-weight: bold; 
+    color: #0056b3; 
+}
+.status-badge { 
+    font-size: 0.75rem; 
+}
+.contact-info { 
+    font-size: 0.9rem; 
+    color: #666; 
+}
+.btn-group-actions { 
+    display: flex; 
+    gap: 5px; 
+}
+@media (max-width: 768px) {
+    .btn-group-actions { 
+        flex-direction: column; 
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="text-center" style="font-family: 'Segoe UI', sans-serif; font-weight: bold; color: #2c3e50; letter-spacing: 2px;">
+                <i class="fas fa-truck me-2"></i>Gestión de Proveedores
+            </h1>
+            <p class="text-muted">Administra todos los proveedores de tu óptica</p>
+        </div>
+        <div class="d-flex gap-2">
+            <div class="input-group" style="width: 300px;">
+                <input type="text" id="searchInput" class="form-control" 
+                       placeholder="Buscar por razón social, RUT, código..." 
+                       value="{{ search_term|default:'' }}">
+                <button class="btn btn-outline-primary" type="button" onclick="buscarProveedores()">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+            <button class="btn btn-success" onclick="abrirModalCrear()">
+                <i class="fas fa-plus me-1"></i>Nuevo
+            </button>
+        </div>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ stats.total_proveedores|default_if_none:0 }}</h4>
+                            <p class="mb-0">Total Proveedores</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-truck" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ stats.con_email|default_if_none:0 }}</h4>
+                            <p class="mb-0">Con Email</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-envelope" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ stats.con_telefono|default_if_none:0 }}</h4>
+                            <p class="mb-0">Con Teléfono</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-phone" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ stats.porcentaje_contacto_completo|default_if_none:0|floatformat:1 }}%</h4>
+                            <p class="mb-0">Contacto Completo</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-user-check" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de Proveedores -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-list me-2"></i>Lista de Proveedores
+                {% if search_term %}
+                    <span class="badge bg-info">Búsqueda: "{{ search_term }}"</span>
+                {% endif %}
+            </h5>
+            <div>
+                {% if search_term %}
+                    <a href="/proveedores" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-times me-1"></i>Limpiar
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Código</th>
+                            <th>Razón Social</th>
+                            <th>RUT</th>
+                            <th>Contacto</th>
+                            <th>Representante</th>
+                            <th>Condiciones</th>
+                            <th>Estado</th>
+                            <th class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if proveedores %}
+                            {% for proveedor in proveedores %}
+                            <tr>
+                                <td>
+                                    <span class="provider-code">{{ proveedor.codigo_proveedor }}</span>
+                                </td>
+                                <td>
+                                    <div>
+                                        <strong>{{ proveedor.razon_social }}</strong>
+                                        {% if proveedor.nombre_comercial %}
+                                            <br><small class="text-muted">{{ proveedor.nombre_comercial }}</small>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>{{ proveedor.rut }}</td>
+                                <td>
+                                    <div class="contact-info">
+                                        {% if proveedor.email %}
+                                            <div><i class="fas fa-envelope me-1"></i>{{ proveedor.email }}</div>
+                                        {% endif %}
+                                        {% if proveedor.telefono %}
+                                            <div><i class="fas fa-phone me-1"></i>{{ proveedor.telefono }}</div>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if proveedor.representante_nombre %}
+                                        <div>
+                                            <strong>{{ proveedor.representante_nombre }}</strong>
+                                            {% if proveedor.representante_telefono %}
+                                                <br><small><i class="fas fa-phone me-1"></i>{{ proveedor.representante_telefono }}</small>
+                                            {% endif %}
+                                        </div>
+                                    {% else %}
+                                        <span class="text-muted">No asignado</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div>
+                                        <small class="badge bg-secondary">{{ proveedor.condiciones_pago|default:'Contado' }}</small>
+                                        {% if proveedor.plazo_pago_dias and proveedor.plazo_pago_dias > 0 %}
+                                            <br><small class="text-info">{{ proveedor.plazo_pago_dias }} días</small>
+                                        {% endif %}
+                                        {% if proveedor.descuento_volumen and proveedor.descuento_volumen > 0 %}
+                                            <br><small class="text-success">{{ proveedor.descuento_volumen }}% desc.</small>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if proveedor.estado %}
+                                        <span class="badge bg-success status-badge">Activo</span>
+                                    {% else %}
+                                        <span class="badge bg-danger status-badge">Inactivo</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group-actions">
+                                        <button class="btn btn-info btn-sm" 
+                                                onclick="verProveedor({{ proveedor.proveedor_id }})" 
+                                                title="Ver detalles">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="btn btn-warning btn-sm" 
+                                                onclick="editarProveedor({{ proveedor.proveedor_id }})" 
+                                                title="Editar">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-danger btn-sm" 
+                                                onclick="eliminarProveedor({{ proveedor.proveedor_id }})" 
+                                                title="Eliminar">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="8" class="text-center py-4">
+                                    <div class="text-muted">
+                                        <i class="fas fa-inbox" style="font-size: 3rem;"></i>
+                                        <h5 class="mt-2">No hay proveedores registrados</h5>
+                                        <p>Comienza agregando tu primer proveedor</p>
+                                        <button class="btn btn-primary" onclick="abrirModalCrear()">
+                                            <i class="fas fa-plus me-1"></i>Agregar Proveedor
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Crear/Editar Proveedor -->
+<div class="modal fade" id="proveedorModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitle">
+                    <i class="fas fa-plus-circle me-2"></i>Nuevo Proveedor
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="proveedorForm">
+                    <input type="hidden" id="proveedorId" name="proveedorId">
+                    
+                    <!-- Información Básica -->
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <h6 class="text-primary"><i class="fas fa-building me-1"></i>Información de la Empresa</h6>
+                            <hr>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-8">
+                            <label class="form-label">Razón Social *</label>
+                            <input type="text" class="form-control" id="razonSocial" name="razonSocial" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">RUT *</label>
+                            <input type="text" class="form-control" id="rut" name="rut" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Nombre Comercial</label>
+                            <input type="text" class="form-control" id="nombreComercial" name="nombreComercial">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Categoría de Productos</label>
+                            <input type="text" class="form-control" id="categoriaProductos" name="categoriaProductos" 
+                                   placeholder="Ej: Lentes, Monturas, Accesorios">
+                        </div>
+                    </div>
+                    
+                    <!-- Información de Contacto -->
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <h6 class="text-primary"><i class="fas fa-phone me-1"></i>Información de Contacto</h6>
+                            <hr>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <label class="form-label">Dirección</label>
+                            <input type="text" class="form-control" id="direccion" name="direccion">
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Teléfono</label>
+                            <input type="text" class="form-control" id="telefono" name="telefono">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" name="email">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Sitio Web</label>
+                            <input type="url" class="form-control" id="sitioWeb" name="sitioWeb">
+                        </div>
+                    </div>
+                    
+                    <!-- Representante -->
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <h6 class="text-primary"><i class="fas fa-user me-1"></i>Representante Comercial</h6>
+                            <hr>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Nombre</label>
+                            <input type="text" class="form-control" id="representanteNombre" name="representanteNombre">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Teléfono</label>
+                            <input type="text" class="form-control" id="representanteTelefono" name="representanteTelefono">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" id="representanteEmail" name="representanteEmail">
+                        </div>
+                    </div>
+                    
+                    <!-- Condiciones Comerciales -->
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <h6 class="text-primary"><i class="fas fa-credit-card me-1"></i>Condiciones Comerciales</h6>
+                            <hr>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Condiciones de Pago</label>
+                            <select class="form-select" id="condicionesPago" name="condicionesPago">
+                                <option value="Contado">Contado</option>
+                                <option value="Crédito">Crédito</option>
+                                <option value="30 días">30 días</option>
+                                <option value="60 días">60 días</option>
+                                <option value="90 días">90 días</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Plazo de Pago (días)</label>
+                            <input type="number" class="form-control" id="plazoPagoDias" name="plazoPagoDias" min="0" value="0">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Descuento por Volumen (%)</label>
+                            <input type="number" class="form-control" id="descuentoVolumen" name="descuentoVolumen" 
+                                   min="0" max="100" step="0.1" value="0">
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <label class="form-label">Observaciones</label>
+                            <textarea class="form-control" id="observaciones" name="observaciones" rows="3"></textarea>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cancelar
+                </button>
+                <button type="button" class="btn btn-primary" onclick="guardarProveedor()">
+                    <i class="fas fa-save me-1"></i>Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Ver Detalles -->
+<div class="modal fade" id="detalleModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-eye me-2"></i>Detalles del Proveedor
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="detalleContent">
+                <!-- Contenido dinámico -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let editando = false;
+    let proveedorModal = new bootstrap.Modal(document.getElementById('proveedorModal'));
+    let detalleModal = new bootstrap.Modal(document.getElementById('detalleModal'));
+
+    // Función para buscar proveedores
+    function buscarProveedores() {
+        const searchTerm = document.getElementById('searchInput').value;
+        const url = new URL(window.location);
+        if (searchTerm.trim()) {
+            url.searchParams.set('search', searchTerm);
+        } else {
+            url.searchParams.delete('search');
+        }
+        window.location.href = url.toString();
+    }
+
+    // Permitir búsqueda con Enter
+    document.getElementById('searchInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            buscarProveedores();
+        }
+    });
+
+    // Abrir modal para crear proveedor
+    function abrirModalCrear() {
+        editando = false;
+        document.getElementById('modalTitle').innerHTML = '<i class="fas fa-plus-circle me-2"></i>Nuevo Proveedor';
+        document.getElementById('proveedorForm').reset();
+        document.getElementById('proveedorId').value = '';
+        proveedorModal.show();
+    }
+
+    // Ver detalles de proveedor
+    async function verProveedor(id) {
+        try {
+            const response = await fetch(`/api/proveedores/${id}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                const proveedor = data.proveedor;
+                document.getElementById('detalleContent').innerHTML = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-primary"><i class="fas fa-building me-1"></i>Información de la Empresa</h6>
+                            <table class="table table-sm">
+                                <tr><td><strong>Código:</strong></td><td class="provider-code">${proveedor.codigo_proveedor}</td></tr>
+                                <tr><td><strong>Razón Social:</strong></td><td>${proveedor.razon_social}</td></tr>
+                                <tr><td><strong>Nombre Comercial:</strong></td><td>${proveedor.nombre_comercial || 'No especificado'}</td></tr>
+                                <tr><td><strong>RUT:</strong></td><td>${proveedor.rut}</td></tr>
+                                <tr><td><strong>Categorías:</strong></td><td>${proveedor.categoria_productos || 'No especificado'}</td></tr>
+                            </table>
+                            
+                            <h6 class="text-primary mt-3"><i class="fas fa-phone me-1"></i>Contacto</h6>
+                            <table class="table table-sm">
+                                <tr><td><strong>Dirección:</strong></td><td>${proveedor.direccion || 'No especificado'}</td></tr>
+                                <tr><td><strong>Teléfono:</strong></td><td>${proveedor.telefono || 'No especificado'}</td></tr>
+                                <tr><td><strong>Email:</strong></td><td>${proveedor.email || 'No especificado'}</td></tr>
+                                <tr><td><strong>Sitio Web:</strong></td><td>${proveedor.sitio_web || 'No especificado'}</td></tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-primary"><i class="fas fa-user me-1"></i>Representante</h6>
+                            <table class="table table-sm">
+                                <tr><td><strong>Nombre:</strong></td><td>${proveedor.representante_nombre || 'No asignado'}</td></tr>
+                                <tr><td><strong>Teléfono:</strong></td><td>${proveedor.representante_telefono || 'No especificado'}</td></tr>
+                                <tr><td><strong>Email:</strong></td><td>${proveedor.representante_email || 'No especificado'}</td></tr>
+                            </table>
+                            
+                            <h6 class="text-primary mt-3"><i class="fas fa-credit-card me-1"></i>Condiciones</h6>
+                            <table class="table table-sm">
+                                <tr><td><strong>Forma de Pago:</strong></td><td>${proveedor.condiciones_pago}</td></tr>
+                                <tr><td><strong>Plazo:</strong></td><td>${proveedor.plazo_pago_dias} días</td></tr>
+                                <tr><td><strong>Descuento:</strong></td><td>${proveedor.descuento_volumen}%</td></tr>
+                                <tr><td><strong>Estado:</strong></td><td>
+                                    <span class="badge ${proveedor.estado ? 'bg-success' : 'bg-danger'}">${proveedor.estado ? 'Activo' : 'Inactivo'}</span>
+                                </td></tr>
+                            </table>
+                            
+                            ${proveedor.observaciones ? `
+                            <h6 class="text-primary mt-3"><i class="fas fa-comment me-1"></i>Observaciones</h6>
+                            <p class="text-muted">${proveedor.observaciones}</p>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+                detalleModal.show();
+            } else {
+                alert('Error al cargar los detalles del proveedor');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error al cargar los detalles del proveedor');
+        }
+    }
+
+    // Editar proveedor
+    async function editarProveedor(id) {
+        try {
+            const response = await fetch(`/api/proveedores/${id}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                editando = true;
+                const proveedor = data.proveedor;
+                
+                document.getElementById('modalTitle').innerHTML = '<i class="fas fa-edit me-2"></i>Editar Proveedor';
+                document.getElementById('proveedorId').value = proveedor.proveedor_id;
+                document.getElementById('razonSocial').value = proveedor.razon_social;
+                document.getElementById('nombreComercial').value = proveedor.nombre_comercial || '';
+                document.getElementById('rut').value = proveedor.rut;
+                document.getElementById('direccion').value = proveedor.direccion || '';
+                document.getElementById('telefono').value = proveedor.telefono || '';
+                document.getElementById('email').value = proveedor.email || '';
+                document.getElementById('sitioWeb').value = proveedor.sitio_web || '';
+                document.getElementById('categoriaProductos').value = proveedor.categoria_productos || '';
+                document.getElementById('condicionesPago').value = proveedor.condiciones_pago;
+                document.getElementById('plazoPagoDias').value = proveedor.plazo_pago_dias;
+                document.getElementById('descuentoVolumen').value = proveedor.descuento_volumen;
+                document.getElementById('representanteNombre').value = proveedor.representante_nombre || '';
+                document.getElementById('representanteTelefono').value = proveedor.representante_telefono || '';
+                document.getElementById('representanteEmail').value = proveedor.representante_email || '';
+                document.getElementById('observaciones').value = proveedor.observaciones || '';
+                
+                proveedorModal.show();
+            } else {
+                alert('Error al cargar los datos del proveedor');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error al cargar los datos del proveedor');
+        }
+    }
+
+    // Guardar proveedor
+    async function guardarProveedor() {
+        try {
+            const formData = {
+                razon_social: document.getElementById('razonSocial').value,
+                nombre_comercial: document.getElementById('nombreComercial').value,
+                rut: document.getElementById('rut').value,
+                direccion: document.getElementById('direccion').value,
+                telefono: document.getElementById('telefono').value,
+                email: document.getElementById('email').value,
+                sitio_web: document.getElementById('sitioWeb').value,
+                categoria_productos: document.getElementById('categoriaProductos').value,
+                condiciones_pago: document.getElementById('condicionesPago').value,
+                plazo_pago_dias: parseInt(document.getElementById('plazoPagoDias').value) || 0,
+                descuento_volumen: parseFloat(document.getElementById('descuentoVolumen').value) || 0,
+                representante_nombre: document.getElementById('representanteNombre').value,
+                representante_telefono: document.getElementById('representanteTelefono').value,
+                representante_email: document.getElementById('representanteEmail').value,
+                observaciones: document.getElementById('observaciones').value
+            };
+
+            let url, method;
+            if (editando) {
+                const id = document.getElementById('proveedorId').value;
+                url = `/proveedores/${id}/editar`;
+                method = 'POST';
+            } else {
+                url = '/proveedores/crear';
+                method = 'POST';
+            }
+
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData)
+            });
+
+            const result = await response.json();
+            
+            if (result.success) {
+                alert(result.message);
+                proveedorModal.hide();
+                location.reload();
+            } else {
+                alert(result.message);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error al guardar el proveedor');
+        }
+    }
+
+    // Eliminar proveedor
+    async function eliminarProveedor(id) {
+        if (confirm('¿Está seguro de que desea eliminar este proveedor?')) {
+            try {
+                const response = await fetch(`/proveedores/${id}/eliminar`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(result.message);
+                    location.reload();
+                } else {
+                    alert(result.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al eliminar el proveedor');
+            }
+        }
+    }
+</script>
+{% endblock %}

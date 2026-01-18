@@ -1,0 +1,358 @@
+{% extends "base.html" %}
+{% block title %}Historial del Paciente{% endblock %}
+
+{% block content %}
+<div class="container mt-4"
+     id="historialContainer"
+     data-paciente-id="{{ paciente_id|default_if_none:'' }}"
+     data-cliente-id="{{ cliente_id|default_if_none:'' }}"
+     data-rut="{{ rut|default_if_none:'' }}">
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">
+      <i class="fas fa-notes-medical me-2"></i>Historial del Paciente
+    </h2>
+    <div>
+      <a id="btnNuevaFicha" class="btn btn-primary me-2" href="#">
+        <i class="fas fa-file-medical me-2"></i>Nueva Ficha Clínica
+      </a>
+      <a id="btnNuevoExamen" class="btn btn-primary" href="#">
+        <i class="fas fa-eye-dropper me-2"></i>Nuevo Examen Oftalmológico
+      </a>
+    </div>
+  </div>
+
+  <div id="alerta"></div>
+
+  <!-- Ficha del paciente -->
+  <div class="card mb-3">
+    <div class="card-body">
+      <h5 class="card-title mb-3"><i class="fas fa-user me-2"></i>Datos del Paciente</h5>
+      <div class="row">
+        <div class="col-md-4"><strong>Nombre:</strong> <span id="pNombre">—</span></div>
+        <div class="col-md-3"><strong>Cédula/RUC:</strong> <span id="pIdDoc">—</span></div>
+        <div class="col-md-3"><strong>Teléfono:</strong> <span id="pTelefono">—</span></div>
+        <div class="col-md-2"><strong>Sexo:</strong> <span id="pSexo">—</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla historial -->
+  <div class="card">
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-sm table-striped align-middle" id="tablaHistorial">
+          <thead class="table-light">
+            <tr>
+              <th>Fecha</th>
+              <th>N° Consulta</th>
+              <th>Motivo</th>
+              <th>Estado</th>
+              <th class="text-end">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyHistorial">
+            <tr><td colspan="5" class="text-muted text-center py-4">Cargando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Consola de depuración (oculta por defecto; usar ?debug=1 para verla) -->
+  <div id="debugBox" class="mt-3 small text-muted" style="white-space:pre-wrap; display:none;"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+  // Mostrar panel de depuración sólo si la URL contiene ?debug=1
+  const DEBUG_UI = new URLSearchParams(location.search).get('debug') === '1';
+
+  // ========== Helpers UI ==========
+  function $(sel){ return document.querySelector(sel); }
+  function log(msg){
+    // Siempre a la consola
+    try { console.log(msg); } catch(e) {}
+    // Sólo al panel visual si se solicitó debug UI
+    if (!DEBUG_UI) return;
+    var box = $('#debugBox');
+    if (box) {
+      box.style.display = ''; // mostrar
+      box.textContent += (msg + '\n');
+    }
+  }
+  function alerta(msg, tipo){
+    var cont = $('#alerta');
+    cont.innerHTML =
+      '<div class="alert alert-'+(tipo||'info')+' alert-dismissible fade show" role="alert">'
+      + msg +
+      '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+    setTimeout(function(){ cont.innerHTML=''; }, 6000);
+  }
+  function fmtFecha(iso){
+    if (!iso) return '—';
+    var d = new Date(iso);
+    return isNaN(d) ? iso : d.toLocaleString();
+  }
+  function fmtSexo(v){
+    if (!v) return '—';
+    var s = String(v).trim().toLowerCase();
+    if (['m','masculino','male','hombre'].indexOf(s)>=0) return 'Masculino';
+    if (['f','femenino','female','mujer'].indexOf(s)>=0) return 'Femenino';
+    return v;
+  }
+  function toJSON(r){ return r.json().catch(function(){ return {}; }); }
+
+  // ========== Resolver IDs ==========
+  function pacienteIdFromPath() {
+    var parts = window.location.pathname.split('/').filter(function(p){return p;});
+    var i = parts.indexOf('pacientes-medicos');
+    if (i>=0 && parts[i+1] && /^\d+$/.test(parts[i+1])) return parts[i+1];
+    return '';
+  }
+
+  function resolverIdentificadores(){
+    var cont = $('#historialContainer');
+    var qs = new URLSearchParams(window.location.search);
+    var pid = (cont && cont.dataset ? cont.dataset.pacienteId : '') || qs.get('paciente_id') || pacienteIdFromPath() || '';
+    var cid = (cont && cont.dataset ? cont.dataset.clienteId  : '') || qs.get('cliente_id')  || '';
+    var rut = (cont && cont.dataset ? cont.dataset.rut        : '') || qs.get('rut')        || '';
+    return { pacienteId: (pid||'').trim(), clienteId: (cid||'').trim(), rut: (rut||'').trim() };
+  }
+
+  // ========== Cargar Paciente ==========
+  function cargarPaciente(pacienteId){
+    log('GET /api/pacientes-medicos/'+pacienteId);
+    return fetch('/api/pacientes-medicos/'+encodeURIComponent(pacienteId))
+    .then(function(r){
+      if (!r.ok) throw new Error('HTTP '+r.status);
+      return toJSON(r);
+    })
+    .then(function(raw){
+      var p = raw && (raw.data || raw) || {};
+      var c = p.cliente || p.Cliente || null;
+
+      function setTexto(sel, val){ var el = $(sel); if (el) el.textContent = val || '—'; }
+
+      if (!c && (p.cliente_id || p.clienteId)) {
+        var cid = p.cliente_id || p.clienteId;
+        log('GET /api/clientes/'+cid);
+        return fetch('/api/clientes/'+encodeURIComponent(cid))
+        .then(function(r){ return r.ok ? toJSON(r) : {}; })
+        .then(function(craw){
+          c = craw && (craw.data || craw) || {};
+          var nombre = [c.nombres||p.nombres||'', c.ap_pat||p.ap_pat||'', c.ap_mat||p.ap_mat||''].filter(Boolean).join(' ') || p.nombre_completo || p.nombre || '—';
+          setTexto('#pNombre', nombre);
+          setTexto('#pIdDoc', c.rut || c.cedula || c.ci || p.rut || p.cedula || p.ci || '—');
+          setTexto('#pTelefono', c.telefono || c.telefono_movil || p.telefono || '—');
+          setTexto('#pSexo', fmtSexo(c.sexo || c.genero || p.sexo || p.genero || '—'));
+          return null;
+        });
+      } else {
+        var nombre2 = [ (c&&c.nombres)||p.nombres||'', (c&&c.ap_pat)||p.ap_pat||'', (c&&c.ap_mat)||p.ap_mat||'' ].filter(Boolean).join(' ') || p.nombre_completo || p.nombre || '—';
+        setTexto('#pNombre', nombre2);
+        setTexto('#pIdDoc', (c&&(c.rut||c.cedula||c.ci)) || p.rut || p.cedula || p.ci || '—');
+        setTexto('#pTelefono', (c&&(c.telefono||c.telefono_movil)) || p.telefono || '—');
+        setTexto('#pSexo', fmtSexo((c&&(c.sexo||c.genero)) || p.sexo || p.genero || '—'));
+        return null;
+      }
+    })
+    .catch(function(err){
+      log('Paciente error: '+err.message);
+      alerta('No fue posible cargar los datos del paciente.', 'warning');
+    });
+  }
+
+  // ========== Normalizadores & Filtro (para fallbacks) ==========
+  function getPacienteIdFromItem(c){
+    return c.paciente_id || c.PacienteId || c.pacienteId ||
+           c.paciente_medico_id || c.paciente_medicoId || c.pacienteMedicoId ||
+           (c.paciente && (c.paciente.paciente_medico_id || c.paciente.id)) ||
+           (c.paciente_medico && (c.paciente_medico.paciente_medico_id || c.paciente_medico.id)) ||
+           null;
+  }
+  function getClienteIdFromItem(c){
+    return c.cliente_id || c.ClienteId || c.clienteId ||
+           (c.cliente && (c.cliente.cliente_id || c.cliente.id)) || null;
+  }
+  function filtrarPorIds(items, pacienteId, clienteId){
+    if (!items || !items.length) return [];
+    return items.filter(function(c){
+      var pid = getPacienteIdFromItem(c);
+      var cid = getClienteIdFromItem(c);
+      if (pacienteId) return String(pid||'') === String(pacienteId);
+      if (clienteId)  return String(cid||'') === String(clienteId);
+      return true;
+    });
+  }
+  function normalizar(items){
+    return items.map(function(c){
+      return {
+        fichaId: c.ficha_id || c.id || c.consulta_id || c.ficha_clinica_id || c.examen_id || null,
+        fecha:   c.fecha_consulta || c.fecha || c.fecha_creacion || c.created_at || c.fecha_examen || null,
+        numero:  c.numero_consulta || c.numero || c.codigo || c.num_consulta || '—',
+        motivo:  c.motivo_consulta || c.motivo || c.razon || c.diagnostico_preliminar || c.tipo || '—',
+        estado:  (c.estado || 'registrado')+'',
+        tipo:    c.tipo || c.tipo_registro || (c.es_examen ? 'examen' : 'ficha')
+      };
+    });
+  }
+  function renderTabla(items){
+    var tbody = $('#tbodyHistorial');
+    if (!items || !items.length){
+      tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">Sin fichas clínicas registradas.</td></tr>';
+      return;
+    }
+    items.sort(function(a,b){ return (new Date(b.fecha||0)) - (new Date(a.fecha||0)); });
+    tbody.innerHTML = '';
+    items.forEach(function(c){
+      var s = (c.estado||'').toLowerCase();
+      var badge = s.indexOf('proceso')>=0 ? 'warning' : s.indexOf('pend')>=0 ? 'secondary' : s.indexOf('anula')>=0 ? 'danger' : 'success';
+      var puedeVer = !!c.fichaId;
+      var verHref  = puedeVer ? '/medical/consultas/'+encodeURIComponent(c.fichaId)+'/' : '#';
+      var certHref = puedeVer ? '/medical/certificado/'+encodeURIComponent(c.fichaId)+'/' : '#';
+      var esExamen = (c.tipo||'').toLowerCase().indexOf('examen')>=0;
+
+      var acciones =
+        '<a class="btn btn-sm btn-outline-primary me-1 '+(puedeVer?'':'disabled')+'" href="'+verHref+'"><i class="fas fa-eye me-1"></i>Ver</a>';
+      if (!esExamen) {
+        acciones += '<a class="btn btn-sm btn-outline-dark '+(puedeVer?'':'disabled')+'" href="'+certHref+'" '+(puedeVer?'target="_blank"':'')+'><i class="fas fa-file-alt me-1"></i>Certificado</a>';
+      }
+
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>'+fmtFecha(c.fecha)+'</td>'+
+        '<td>'+c.numero+'</td>'+
+        '<td>'+c.motivo+'</td>'+
+        '<td><span class="badge bg-'+badge+'">'+c.estado+'</span></td>'+
+        '<td class="text-end">'+acciones+'</td>';
+      tbody.appendChild(tr);
+    });
+  }
+
+  // ========== Cargar Historial ==========
+  function cargarHistorial(pacienteId, clienteId){
+    var urlPrimaria = '/api/pacientes-medicos/'+encodeURIComponent(pacienteId)+'/consultas';
+    log('GET '+urlPrimaria);
+    fetch(urlPrimaria)
+      .then(function(r){ return r.ok ? toJSON(r) : {}; })
+      .then(function(raw){
+        var items = Array.isArray(raw) ? raw :
+                    Array.isArray(raw && raw.items) ? raw.items :
+                    Array.isArray(raw && raw.consultas) ? raw.consultas :
+                    Array.isArray(raw && raw.data) ? raw.data :
+                    Array.isArray(raw && raw.data && raw.data.items) ? raw.data.items : [];
+        log('Primario -> totalRaw='+(items && items.length ? items.length : 0));
+
+        // No filtrar el primario (ya viene scopeado por paciente)
+        if (items && items.length){
+          log('Primario -> sin filtro (endpoint scopeado) -> render '+items.length);
+          renderTabla(normalizar(items));
+          return;
+        }
+
+        // Fallbacks (listas globales) -> aquí sí filtramos
+        var variantesPaciente = ['paciente_id','paciente_medico_id','pacienteId','pacienteMedicoId','pmid'];
+        var urls = [];
+        variantesPaciente.forEach(function(k){
+          urls.push('/api/fichas-clinicas?'+k+'='+encodeURIComponent(pacienteId));
+          urls.push('/api/consultas?'+k+'='+encodeURIComponent(pacienteId));
+        });
+        if (clienteId) {
+          urls.push('/api/fichas-clinicas?cliente_id='+encodeURIComponent(clienteId));
+          urls.push('/api/consultas?cliente_id='+encodeURIComponent(clienteId));
+        }
+
+        (function next(i){
+          if (i>=urls.length){
+            renderTabla([]); // nada encontrado
+            return;
+          }
+          var u = urls[i];
+          log('GET '+u);
+          fetch(u)
+            .then(function(r){ return r.ok ? toJSON(r) : {}; })
+            .then(function(raw2){
+              var items2 = Array.isArray(raw2) ? raw2 :
+                          Array.isArray(raw2 && raw2.items) ? raw2.items :
+                          Array.isArray(raw2 && raw2.consultas) ? raw2.consultas :
+                          Array.isArray(raw2 && raw2.data) ? raw2.data :
+                          Array.isArray(raw2 && raw2.data && raw2.data.items) ? raw2.data.items : [];
+              log('  -> totalRaw='+(items2 && items2.length ? items2.length : 0));
+              var f2 = filtrarPorIds(items2, pacienteId, clienteId);
+              log('  -> tras filtro='+f2.length);
+              if (f2.length){
+                renderTabla(normalizar(f2));
+              } else {
+                next(i+1);
+              }
+            })
+            .catch(function(){ next(i+1); });
+        })(0);
+      })
+      .catch(function(err){
+        log('Historial error: '+err.message);
+        alerta('Error cargando historial.', 'danger');
+        var tbody = document.getElementById('tbodyHistorial');
+        if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger py-4">Error cargando historial.</td></tr>';
+      });
+  }
+
+  // ========== Start ==========
+  document.addEventListener('DOMContentLoaded', function(){
+    log('historial_paciente.js cargado');
+    var ids = resolverIdentificadores();
+    log('Resueltos: pacienteId='+ids.pacienteId+' clienteId='+ids.clienteId+' rut='+ids.rut);
+
+    if (!ids.pacienteId && !ids.clienteId){
+      alerta('No fue posible identificar al paciente. Vuelve desde la lista e intenta de nuevo.', 'danger');
+      return;
+    }
+
+    // Setear enlaces de acción con paciente_id
+    if (ids.pacienteId){
+      var btnFicha = $('#btnNuevaFicha');
+      var btnExam  = $('#btnNuevoExamen');
+      if (btnFicha) btnFicha.href = '/medical/ficha-clinica-nuevo/?paciente_id='+encodeURIComponent(ids.pacienteId);
+      // No hay endpoint dedicado para “nuevo examen oftalmológico” con paciente_id; usamos crear consulta.
+      if (btnExam)  btnExam.href  = '/medical/consultas-nuevo/?paciente_id='+encodeURIComponent(ids.pacienteId);
+    }
+
+    // Cargar ficha de paciente y su historial
+    if (ids.pacienteId){
+      cargarPaciente(ids.pacienteId).then(function(){
+        cargarHistorial(ids.pacienteId, ids.clienteId || '');
+      });
+    } else {
+      // Si sólo hay clienteId, resolver paciente vía listado por cliente
+      var url = '/api/pacientes-medicos?cliente_id='+encodeURIComponent(ids.clienteId);
+      log('GET '+url);
+      fetch(url).then(function(r){ return r.ok ? toJSON(r) : {}; })
+      .then(function(raw){
+        var arr = (raw && (raw.data || raw)) || [];
+        if (Array.isArray(arr) && arr.length){
+          arr.sort(function(a,b){ return (b.paciente_medico_id||0)-(a.paciente_medico_id||0); });
+          var pmid = String(arr[0].paciente_medico_id || arr[0].id);
+          var btnFicha = $('#btnNuevaFicha');
+          var btnExam  = $('#btnNuevoExamen');
+          if (btnFicha) btnFicha.href = '/medical/ficha-clinica-nuevo/?paciente_id='+encodeURIComponent(pmid);
+          if (btnExam)  btnExam.href  = '/medical/consultas-nuevo/?paciente_id='+encodeURIComponent(pmid);
+          cargarPaciente(pmid).then(function(){
+            cargarHistorial(pmid, ids.clienteId);
+          });
+        } else {
+          alerta('El cliente aún no está asociado como paciente médico.', 'warning');
+          var tbody = $('#tbodyHistorial');
+          if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">Sin fichas clínicas registradas.</td></tr>';
+        }
+      }).catch(function(err){
+        log('Resolviendo desde cliente error: '+err.message);
+        alerta('Error resolviendo el paciente desde el cliente.', 'danger');
+      });
+    }
+  });
+})();
+</script>
+{% endblock %}

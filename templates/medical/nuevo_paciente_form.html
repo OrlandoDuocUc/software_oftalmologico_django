@@ -1,0 +1,468 @@
+{% extends "base.html" %}
+
+{% block title %}Nuevo Paciente Médico - Oftalmetryc{% endblock %}
+
+{% block extra_css %}
+/* ESTILOS ESPECÍFICOS PARA NUEVO PACIENTE */
+.page-header {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    padding: 30px;
+    border-radius: 15px;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.form-section {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+.section-title {
+    color: var(--primary-color);
+    border-bottom: 2px solid var(--primary-color);
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+    font-weight: bold;
+}
+
+.form-row { margin-bottom: 15px; }
+
+.btn-group-custom {
+    background: white;
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    margin-top: 20px;
+}
+
+.required-field { color: red; }
+
+.info-tooltip {
+    cursor: help;
+    border-bottom: 1px dotted #999;
+}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <!-- HEADER DE LA PÁGINA -->
+    <div class="page-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1><i class="fas fa-user-plus me-3"></i>Nuevo Paciente Médico</h1>
+                <p class="mb-0">Registro completo de paciente para el módulo oftalmológico</p>
+            </div>
+            <a href="/pacientes-medicos" class="btn btn-light btn-lg">
+                <i class="fas fa-list me-2"></i>Ver Pacientes
+            </a>
+        </div>
+    </div>
+
+    <form id="nuevoPacienteForm" novalidate>
+        <!-- INFORMACIÓN PERSONAL BÁSICA -->
+        <div class="form-section">
+            <h4 class="section-title">
+                <i class="fas fa-id-card me-2"></i>Información Personal Básica
+            </h4>
+            <div id="prefillNotice" class="alert alert-info d-none" role="alert">
+                <i class="fas fa-info-circle me-2"></i>Datos precargados desde Cliente. Puedes revisarlos antes de registrar al paciente.
+            </div>
+            <div class="row">
+                <div class="col-md-4 form-row">
+                    <label for="nombres" class="form-label">Nombres <span class="required-field">*</span></label>
+                    <input type="text" class="form-control" id="nombres" name="nombres" required autocomplete="given-name">
+                    <div class="invalid-feedback">Ingresa los nombres.</div>
+                </div>
+                <div class="col-md-4 form-row">
+                    <label for="ap_pat" class="form-label">Apellido Paterno <span class="required-field">*</span></label>
+                    <input type="text" class="form-control" id="ap_pat" name="ap_pat" required autocomplete="family-name">
+                    <div class="invalid-feedback">Ingresa el apellido paterno.</div>
+                </div>
+                <div class="col-md-4 form-row">
+                    <label for="ap_mat" class="form-label">Apellido Materno</label>
+                    <input type="text" class="form-control" id="ap_mat" name="ap_mat" autocomplete="additional-name">
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-3 form-row">
+                    <label for="rut" class="form-label">
+                        Cédula / RUC (Ecuador) <span class="required-field">*</span>
+                    </label>
+                    <input type="text" class="form-control" id="rut" name="rut"
+                           placeholder="Cédula: 0102030405 • RUC: 0102030405001"
+                           inputmode="numeric" pattern="^\d{10}(\d{3})?$" required>
+                    <small class="form-text text-muted">
+                        Acepta <strong>cédula (10 dígitos)</strong> o <strong>RUC (13 dígitos)</strong>.
+                    </small>
+                    <div class="invalid-feedback" id="rutFeedback">Ingresa una cédula o RUC válido.</div>
+                </div>
+                <div class="col-md-3 form-row">
+                    <label for="fecha_nacimiento" class="form-label">Fecha de Nacimiento</label>
+                    <input type="date" class="form-control" id="fecha_nacimiento" name="fecha_nacimiento" autocomplete="bday">
+                </div>
+                <div class="col-md-3 form-row">
+                    <label for="email" class="form-label">Email</label>
+                    <input type="email" class="form-control" id="email" name="email" autocomplete="email" placeholder="nombre@dominio.com">
+                </div>
+                <div class="col-md-3 form-row">
+                    <label for="telefono" class="form-label">Teléfono</label>
+                    <input type="tel" class="form-control" id="telefono" name="telefono"
+                           placeholder="+593 99 123 4567" autocomplete="tel">
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-12 form-row">
+                    <label for="direccion" class="form-label">Dirección</label>
+                    <textarea class="form-control" id="direccion" name="direccion" rows="2"
+                              placeholder="Calle, número, barrio, ciudad, provincia"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- INFORMACIÓN MÉDICA ESPECÍFICA -->
+        <div class="form-section">
+            <h4 class="section-title">
+                <i class="fas fa-stethoscope me-2"></i>Información Optometrica Clínica
+            </h4>
+            <div class="row">
+                <div class="col-md-6 form-row">
+                    <label for="numero_ficha" class="form-label">Número de Ficha <span class="required-field">*</span></label>
+                    <input type="text" class="form-control" id="numero_ficha" name="numero_ficha" readonly>
+                    <small class="form-text text-muted">Se genera automáticamente</small>
+                </div>
+                <div class="col-md-6 form-row">
+                    <label for="fecha_registro" class="form-label">Fecha de Registro</label>
+                    <input type="datetime-local" class="form-control" id="fecha_registro" name="fecha_registro" readonly>
+                </div>
+            </div>
+        </div>
+
+        <!-- ANTECEDENTES MÉDICOS -->
+        <div class="form-section">
+            <h4 class="section-title">
+                <i class="fas fa-history me-2"></i>Antecedentes Médicos
+            </h4>
+            <div class="row">
+                <div class="col-md-6 form-row">
+                    <label for="antecedentes_medicos" class="form-label">
+                        Antecedentes Médicos Generales
+                        <span class="info-tooltip" title="Enfermedades, cirugías, hospitalizaciones previas">ℹ️</span>
+                    </label>
+                    <textarea class="form-control" id="antecedentes_medicos" name="antecedentes_medicos" rows="4"
+                              placeholder="Diabetes, hipertensión, cirugías previas, etc."></textarea>
+                </div>
+                <div class="col-md-6 form-row">
+                    <label for="antecedentes_oculares" class="form-label">
+                        Antecedentes Oculares
+                        <span class="info-tooltip" title="Problemas de visión, cirugías oculares, tratamientos previos">ℹ️</span>
+                    </label>
+                    <textarea class="form-control" id="antecedentes_oculares" name="antecedentes_oculares" rows="4"
+                              placeholder="Glaucoma, cataratas, cirugías oculares, uso de lentes, etc."></textarea>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6 form-row">
+                    <label for="alergias" class="form-label">Alergias Conocidas</label>
+                    <textarea class="form-control" id="alergias" name="alergias" rows="3"
+                              placeholder="Medicamentos, sustancias, alimentos a los que es alérgico"></textarea>
+                </div>
+                <div class="col-md-6 form-row">
+                    <label for="medicamentos_actuales" class="form-label">Medicamentos Actuales</label>
+                    <textarea class="form-control" id="medicamentos_actuales" name="medicamentos_actuales" rows="3"
+                              placeholder="Medicamentos que toma actualmente con dosis y frecuencia"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTACTO DE EMERGENCIA -->
+        <div class="form-section">
+            <h4 class="section-title">
+                <i class="fas fa-phone me-2"></i>Contacto de Emergencia
+            </h4>
+            <div class="row">
+                <div class="col-md-6 form-row">
+                    <label for="contacto_emergencia" class="form-label">Nombre del Contacto</label>
+                    <input type="text" class="form-control" id="contacto_emergencia" name="contacto_emergencia"
+                           placeholder="Nombre completo del contacto de emergencia">
+                </div>
+                <div class="col-md-6 form-row">
+                    <label for="telefono_emergencia" class="form-label">Teléfono de Emergencia</label>
+                    <input type="tel" class="form-control" id="telefono_emergencia" name="telefono_emergencia"
+                           placeholder="+593 98 765 4321">
+                </div>
+            </div>
+        </div>
+
+        <!-- BOTONES DE ACCIÓN -->
+        <div class="btn-group-custom">
+            <div class="d-flex justify-content-between">
+                <div>
+                    <a href="/pacientes-medicos" class="btn btn-outline-secondary btn-lg me-3">
+                        <i class="fas fa-arrow-left me-2"></i>Cancelar
+                    </a>
+                    <button type="button" class="btn btn-outline-info btn-lg" onclick="guardarBorrador()">
+                        <i class="fas fa-save me-2"></i>Guardar Borrador
+                    </button>
+                </div>
+                <div>
+                    <button type="submit" class="btn btn-primary btn-lg" id="btnRegistrar">
+                        <i class="fas fa-user-plus me-2"></i>Registrar Paciente
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- MODAL: Paciente creado -->
+<div class="modal fade" id="pacienteCreadoModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-check-circle text-success me-2"></i>Paciente creado</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        El paciente fue registrado correctamente.
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="irPacientesBtn" class="btn btn-primary">
+          <i class="fas fa-list me-2"></i>Ver Pacientes
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // ---------- Inicialización ----------
+    document.addEventListener('DOMContentLoaded', function() {
+        generarNumeroFicha();
+        establecerFechaRegistro();
+
+        // Validaciones de campos obligatorios
+        ['nombres','ap_pat','rut'].forEach(id => {
+            const el = document.getElementById(id);
+            el.addEventListener('blur', () => marcarValidez(el, !!el.value.trim()));
+        });
+
+        // Validación/normalización de identificación EC
+        const rutInput = document.getElementById('rut');
+        rutInput.addEventListener('input', limitarSoloDigitos);
+        rutInput.addEventListener('blur', validarIdentificacionEc);
+
+        // Botón modal
+        const irBtn = document.getElementById('irPacientesBtn');
+        irBtn.addEventListener('click', () => { window.location.href = '/pacientes-medicos'; });
+
+        // Prefill si viene cliente_id
+        prefillDesdeCliente();
+    });
+
+    // ---------- Utilitarios de UI ----------
+    function marcarValidez(input, ok) {
+        input.classList.toggle('is-invalid', !ok);
+        input.classList.toggle('is-valid', ok);
+    }
+
+    function limitarSoloDigitos(e) {
+        e.target.value = e.target.value.replace(/\D+/g, '').slice(0, 13); // máx 13 (RUC)
+    }
+
+    // ---------- Generadores ----------
+    function generarNumeroFicha() {
+        // Corto y único: FM-YYYYMM-XXXXXX (17 chars máx)
+        const f = new Date();
+        const yyyymm = f.getFullYear().toString() + String(f.getMonth() + 1).padStart(2, '0');
+        const rand = String(Math.floor(Math.random() * 1_000_000)).padStart(6, '0');
+        const numeroFicha = `FM-${yyyymm}-${rand}`;
+        document.getElementById('numero_ficha').value = numeroFicha;
+    }
+
+    function establecerFechaRegistro() {
+        const ahora = new Date();
+        const fechaLocal = new Date(ahora.getTime() - ahora.getTimezoneOffset() * 60000)
+            .toISOString().slice(0, 16);
+        document.getElementById('fecha_registro').value = fechaLocal;
+    }
+
+    // ---------- Prefill por cliente_id ----------
+    async function prefillDesdeCliente() {
+        const params = new URLSearchParams(window.location.search);
+        const clienteId = params.get('cliente_id');
+        if (!clienteId) return;
+
+        try {
+            const res = await fetch(`/api/clientes/${clienteId}`);
+            if (!res.ok) return;
+            const data = await res.json();
+            const c = data.data || data;
+
+            const prefillMap = {
+                'nombres': c.nombres || '',
+                'ap_pat': c.ap_pat || '',
+                'ap_mat': c.ap_mat || '',
+                'rut': c.rut || '',
+                'telefono': c.telefono || '',
+                'email': c.email || '',
+                'direccion': c.direccion || '',
+                'fecha_nacimiento': c.fecha_nacimiento ? c.fecha_nacimiento.split('T')[0] : ''
+            };
+            Object.entries(prefillMap).forEach(([id, val]) => {
+                const el = document.getElementById(id);
+                if (el !== null) el.value = val || '';
+                if (['nombres','ap_pat','rut'].includes(id)) {
+                    marcarValidez(el, !!val);
+                }
+            });
+
+            document.getElementById('prefillNotice').classList.remove('d-none');
+        } catch (e) {
+            console.warn('No se pudo prellenar desde cliente:', e);
+        }
+    }
+
+    // ---------- Validación Cédula/RUC Ecuador ----------
+    function validarIdentificacionEc() {
+        const input = document.getElementById('rut');
+        const val = (input.value || '').trim();
+        const fb = document.getElementById('rutFeedback');
+
+        let valido = false;
+        if (/^\d{10}$/.test(val)) {
+            // Cédula 10 dígitos
+            valido = validarCedula(val);
+            fb.textContent = valido ? '' : 'Cédula inválida (10 dígitos con verificador).';
+        } else if (/^\d{13}$/.test(val)) {
+            // RUC 13 dígitos (persona natural: termina en 001)
+            const baseCedula = val.slice(0, 10);
+            const termina001 = val.slice(10) === '001';
+            valido = validarCedula(baseCedula) && termina001;
+            fb.textContent = valido ? '' : 'RUC inválido. Para persona natural debe terminar en 001.';
+        } else {
+            fb.textContent = 'Debe tener 10 (cédula) o 13 (RUC) dígitos.';
+        }
+
+        marcarValidez(input, valido);
+        return valido;
+    }
+
+    function validarCedula(ci) {
+        // 10 dígitos, provincia 01-24, dígito verificador módulo 10
+        if (!/^\d{10}$/.test(ci)) return false;
+        const provincia = parseInt(ci.slice(0, 2), 10);
+        if (provincia < 1 || provincia > 24) return false;
+        const coef = [2,1,2,1,2,1,2,1,2];
+        let suma = 0;
+        for (let i = 0; i < 9; i++) {
+            let prod = parseInt(ci[i], 10) * coef[i];
+            if (prod >= 10) prod -= 9;
+            suma += prod;
+        }
+        const decena = Math.ceil(suma / 10) * 10;
+        const digito = (decena - suma) % 10;
+        return digito === parseInt(ci[9], 10);
+    }
+
+    // ---------- Guardado ----------
+    document.getElementById('nuevoPacienteForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        // Validaciones mínimas
+        const okNombres = !!document.getElementById('nombres').value.trim();
+        const okApPat = !!document.getElementById('ap_pat').value.trim();
+        const okRut = validarIdentificacionEc();
+
+        marcarValidez(document.getElementById('nombres'), okNombres);
+        marcarValidez(document.getElementById('ap_pat'), okApPat);
+
+        if (!(okNombres && okApPat && okRut)) {
+            mostrarAlerta('Revisa los campos obligatorios y la identificación.', 'danger');
+            return;
+        }
+
+        const params = new URLSearchParams(window.location.search);
+        const clienteId = params.get('cliente_id');
+
+        const clienteData = !clienteId ? {
+            nombres: document.getElementById('nombres').value.trim(),
+            ap_pat: document.getElementById('ap_pat').value.trim(),
+            ap_mat: document.getElementById('ap_mat').value.trim() || null,
+            rut: document.getElementById('rut').value.trim(),
+            email: document.getElementById('email').value.trim() || null,
+            telefono: document.getElementById('telefono').value.trim() || null,
+            direccion: document.getElementById('direccion').value.trim() || null,
+            fecha_nacimiento: document.getElementById('fecha_nacimiento').value || null,
+            estado: true
+        } : null;
+
+        const pacienteMedicoData = {
+            numero_ficha: document.getElementById('numero_ficha').value,
+            antecedentes_medicos: document.getElementById('antecedentes_medicos')?.value || null,
+            antecedentes_oculares: document.getElementById('antecedentes_oculares')?.value || null,
+            alergias: document.getElementById('alergias')?.value || null,
+            medicamentos_actuales: document.getElementById('medicamentos_actuales')?.value || null,
+            contacto_emergencia: document.getElementById('contacto_emergencia')?.value || null,
+            telefono_emergencia: document.getElementById('telefono_emergencia')?.value || null,
+            estado: true
+        };
+
+        const payload = clienteId
+            ? { cliente_id: parseInt(clienteId, 10), paciente_medico: pacienteMedicoData }
+            : { cliente: clienteData, paciente_medico: pacienteMedicoData };
+
+        const btn = document.getElementById('btnRegistrar');
+        btn.disabled = true;
+
+        try {
+            const response = await fetch('/api/pacientes-medicos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json().catch(() => ({}));
+
+            if (response.ok) {
+                const modalEl = document.getElementById('pacienteCreadoModal');
+                const modal = new bootstrap.Modal(modalEl);
+                modal.show();
+                setTimeout(() => { window.location.href = '/pacientes-medicos'; }, 1600);
+            } else {
+                btn.disabled = false;
+                mostrarAlerta(`Error al registrar paciente: ${result.message || 'Respuesta no válida'}`, 'danger');
+            }
+        } catch (err) {
+            btn.disabled = false;
+            console.error(err);
+            mostrarAlerta('Error de conexión al registrar el paciente', 'danger');
+        }
+    });
+
+    // Borrador (placeholder)
+    async function guardarBorrador() {
+        mostrarAlerta('Funcionalidad de borrador en desarrollo', 'info');
+    }
+
+    // Alertas
+    function mostrarAlerta(mensaje, tipo) {
+        const alertaHTML = `
+            <div class="alert alert-${tipo} alert-dismissible fade show" role="alert">
+                ${mensaje}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>`;
+        const container = document.querySelector('.container');
+        container.insertAdjacentHTML('afterbegin', alertaHTML);
+        setTimeout(() => {
+            const alerta = container.querySelector('.alert');
+            if (alerta) alerta.remove();
+        }, 5000);
+    }
+</script>
+{% endblock %}

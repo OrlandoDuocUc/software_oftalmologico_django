@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificado Médico - Oftalmetryc</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { background-color: #e9ecef; }
+        .certificate-container {
+            max-width: 800px;
+            margin: 40px auto;
+            background: white;
+            padding: 40px 50px;
+            border: 1px solid #dee2e6;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+            font-family: 'Times New Roman', Times, serif;
+            position: relative;
+        }
+        .cert-header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 20px; }
+        .cert-header h3 { font-weight: bold; margin: 0; }
+        .cert-header p { margin: 2px 0; font-size: 0.9rem; }
+        .cert-date { text-align: right; margin-bottom: 25px; font-style: italic; }
+        .cert-title { text-align: center; font-weight: bold; text-decoration: underline; margin-bottom: 25px; font-size: 1.3rem; }
+        .cert-body { line-height: 1.8; text-align: justify; margin-bottom: 25px; }
+        .cert-section-title { font-weight: bold; margin-top: 20px; margin-bottom: 10px; }
+        .exam-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        .exam-table th, .exam-table td { border: 1px solid #999; padding: 5px; text-align: center; }
+        .exam-table th { background-color: #f2f2f2; }
+        .cert-footer { margin-top: 60px; text-align: center; }
+        .signature-line { border-top: 1px solid #333; width: 250px; margin: 0 auto 5px auto; }
+
+        /* Pie de página fijo para impresión */
+        .print-footer {
+            width: 100%;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #333;
+            padding-top: 8px;
+            border-top: 1px solid #999;
+            position: fixed;
+            bottom: 10px;
+            left: 0;
+            right: 0;
+            background: white;
+        }
+
+        .action-buttons { text-align: center; margin-top: 30px; margin-bottom: 30px; }
+
+        @media print {
+            body { background-color: white; }
+            .action-buttons, .navbar { display: none !important; }
+            .certificate-container {
+                box-shadow: none;
+                border: none;
+                margin: 0;
+                max-width: 100%;
+                padding-bottom: 60px; /* deja espacio para el pie fijo */
+            }
+            .print-footer { position: fixed; bottom: 0; }
+            .action-buttons { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="certificate-container" id="printable-area">
+        <div class="cert-header">
+            <h3>OFTALMETRYC</h3>
+            <p>{{ footer_info.direccion }}</p>
+            <p>{{ footer_info.telefonos }}</p>
+        </div>
+
+        <!-- Encabezado con ciudad y fecha formateada -->
+        <p class="cert-date">{{ footer_info.ciudad }}, {{ fecha_consulta_str }}</p>
+        <h4 class="cert-title">CERTIFICADO</h4>
+
+        <p class="cert-body">
+            Por medio del presente certifico haber atendido el día {{ fecha_consulta_str }}
+            al Sr./Sra. <strong>{{ cliente.nombres }} {{ cliente.ap_pat }}</strong>,
+            edad {{ edad|default_if_none:'-' }} años, presentando en su valoración ocular los siguientes resultados.
+        </p>
+
+        <div class="row">
+            <div class="col-6">
+                <p class="cert-section-title">Agudeza Visual</p>
+                <table class="exam-table">
+                    <tr><th></th><th>SC</th><th>CC</th><th>PH</th></tr>
+                    <tr>
+                        <td>Distancia OD</td>
+                        <td>{{ consulta.av_od_sc|default:'NSPR' }}</td>
+                        <td>{{ consulta.av_od_cc|default:'NSPR' }}</td>
+                        <td>{{ consulta.av_od_ph|default:'NSPR' }}</td>
+                    </tr>
+                    <tr>
+                        <td>Distancia OI</td>
+                        <td>{{ consulta.av_oi_sc|default:'NSPR' }}</td>
+                        <td>{{ consulta.av_oi_cc|default:'NSPR' }}</td>
+                        <td>{{ consulta.av_oi_ph|default:'NSPR' }}</td>
+                    </tr>
+                    <tr>
+                        <td>Próxima OD</td>
+                        <td colspan="3">{{ consulta.av_od_cerca|default:'NSPR' }}</td>
+                    </tr>
+                    <tr>
+                        <td>Próxima OI</td>
+                        <td colspan="3">{{ consulta.av_oi_cerca|default:'NSPR' }}</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="col-6">
+                <p class="cert-section-title">Refracción Final</p>
+                <table class="exam-table">
+                    <tr><th></th><th>Esfera</th><th>Cilindro</th><th>Eje</th></tr>
+                    <tr>
+                        <td>OD</td>
+                        <td>{{ consulta.esfera_od|default:'N/A' }}</td>
+                        <td>{{ consulta.cilindro_od|default:'N/A' }}</td>
+                        <td>{{ consulta.eje_od|default:'N/A' }}</td>
+                    </tr>
+                    <tr>
+                        <td>OI</td>
+                        <td>{{ consulta.esfera_oi|default:'N/A' }}</td>
+                        <td>{{ consulta.cilindro_oi|default:'N/A' }}</td>
+                        <td>{{ consulta.eje_oi|default:'N/A' }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <p class="cert-section-title">Biomicroscopía:</p>
+        <p>{{ biomicroscopia_texto|default:"Sin observaciones." }}</p>
+
+        <p class="cert-section-title">Fondo de Ojo:</p>
+        <p>{{ fondo_ojo_texto|default:"Sin observaciones." }}</p>
+
+        <p class="cert-section-title">Tratamiento:</p>
+        {% if tratamiento_items and tratamiento_items|length > 0 %}
+            <ul>
+                {% for item in tratamiento_items %}
+                    <li>{{ item }}</li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>—</p>
+        {% endif %}
+
+        <p class="cert-section-title">Diagnóstico:</p>
+        <p>{{ diagnostico_texto|default:"N/A" }}</p>
+
+        <div class="cert-footer">
+            <p>Atentamente</p>
+            <br><br>
+            <div class="signature-line"></div>
+            <p>
+                <strong>
+                    {% if medico_nombre %}
+                        {{ medico_nombre }}
+                    {% else %}
+                        {{ consulta.usuario.nombre }}{% if consulta.usuario.ap_pat %} {{ consulta.usuario.ap_pat }}{% endif %}
+                    {% endif %}
+                </strong><br>
+                Área de Salud Visual<br>
+                Especialista en Oftalmología
+            </p>
+        </div>
+    </div>
+
+    <!-- Pie fijo (también visible en pantalla para previsualizar) -->
+    <div class="print-footer">
+        {{ footer_info.direccion }} — {{ footer_info.telefonos }}
+    </div>
+
+    <div class="action-buttons">
+        {% with back_id=consulta.ficha_id|default:consulta_id %}
+        <a href="{% url 'medical:ver_consulta' consulta_id=back_id %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Volver a la Ficha
+        </a>
+        {% endwith %}
+        <button class="btn btn-primary" onclick="window.print()">
+            <i class="fas fa-print me-2"></i>Imprimir Certificado
+        </button>
+    </div>
+</body>
+</html>

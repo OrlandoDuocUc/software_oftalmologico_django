@@ -1,0 +1,412 @@
+{% extends "base.html" %}
+
+{% block title %}Gestión de Pacientes/Clientes - Oftalmetryc{% endblock %}
+
+{% block extra_css %}
+/* ESTILOS ESPECFICOS DE PACIENTES */
+.page-header {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    padding: 30px;
+    border-radius: 15px;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.search-section {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+.patients-table {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.patient-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.patient-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+}
+
+.patient-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.badge-type {
+    font-size: .75rem;
+    padding: .35rem .6rem;
+    border-radius: 999px;
+}
+
+.btn-action {
+    border-radius: 20px;
+    padding: 6px 15px;
+    font-size: 0.85rem;
+    margin: 2px;
+}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <!-- HEADER DE LA PÁGINA -->
+    <div class="page-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1><i class="fas fa-users me-3"></i>Gestión de Pacientes/Clientes</h1>
+                <p class="mb-0">Administra pacientes y convierte clientes en pacientes del módulo médico.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECCIN DE BSQUEDA Y FILTROS -->
+    <div class="search-section">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-5">
+                <label for="searchPersona" class="form-label fw-bold">
+                    <i class="fas fa-search me-2"></i>Buscar Paciente/Cliente
+                </label>
+                <input type="text"
+                       class="form-control"
+                       id="searchPersona"
+                       placeholder="Buscar por nombre, Cédula o RUC..."
+                       onkeyup="filtrarPersonas()">
+            </div>
+            <div class="col-md-3">
+                <label for="filterEstado" class="form-label fw-bold">Estado</label>
+                <select class="form-select" id="filterEstado" onchange="filtrarPersonas()">
+                    <option value="">Todos</option>
+                    <option value="true">Activos</option>
+                    <option value="false">Inactivos</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <div class="d-grid gap-2 d-md-flex">
+                    <button class="btn btn-primary w-100" onclick="filtrarPersonas()">
+                        <i class="fas fa-search me-2"></i>Buscar
+                    </button>
+                    <button class="btn btn-outline-secondary w-100" onclick="limpiarFiltros()">
+                        <i class="fas fa-undo me-2"></i>Limpiar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LISTA DE PERSONAS -->
+    <div class="patients-table">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5><i class="fas fa-list me-2"></i>Lista Paciente/Cliente</h5>
+            <span class="badge bg-primary rounded-pill" id="totalPersonasCount">0 registros</span>
+        </div>
+        
+        <div id="personasList">
+            <!-- Las personas se cargarn aqu dinmicamente -->
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+                <p class="text-muted mt-3">Cargando registros...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Ver Detalles -->
+<div class="modal fade" id="modalDetallesPersona" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-user me-2"></i>Detalles</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="detallesPersonaContent">
+                <div class="text-center"><div class="spinner-border"></div></div>
+            </div>
+             <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let personasData = []; // Pacientes y clientes unificados
+
+    document.addEventListener('DOMContentLoaded', function() {
+        cargarPersonas();
+    });
+
+    async function cargarPersonas() {
+        try {
+            const qs = new URLSearchParams({
+                q: '',
+                estado: '',
+                limit: 200,
+                offset: 0
+            }).toString();
+            const response = await fetch(`/api/personas?${qs}`);
+            if (response.ok) {
+                const data = await response.json();
+                personasData = data.data || [];
+                mostrarPersonas(personasData);
+            } else {
+                mostrarError('Error al cargar personas desde la API');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            mostrarError('Error de conexin al cargar personas');
+        }
+    }
+
+    function inicialesDe(cliente) {
+        const n = (cliente.nombres || '').trim();
+        const a = (cliente.ap_pat || '').trim();
+        return `${n.charAt(0) || ''}${a.charAt(0) || ''}` || 'NA';
+    }
+
+    function etiquetaIdent(cliente) {
+        return cliente.rut ? cliente.rut : 'No registrado';
+    }
+
+    function mostrarPersonas(items) {
+        const container = document.getElementById('personasList');
+        updatePersonasCount(items.length);
+        
+        if (items.length === 0) {
+            container.innerHTML = `<div class="text-center py-5">
+                <i class="fas fa-user-slash fa-3x text-muted"></i>
+                <h5 class="text-muted mt-3">No se encontraron registros</h5>
+                <p class="text-muted">Prueba a limpiar los filtros o crea un nuevo paciente.</p>
+            </div>`;
+            return;
+        }
+
+        const html = items.map(it => {
+            const cliente = it.cliente || {};
+            const nombre = `${cliente.nombres || ''} ${cliente.ap_pat || ''} ${cliente.ap_mat || ''}`.trim();
+            const idTexto = etiquetaIdent(cliente);
+            const ini = inicialesDe(cliente);
+
+            if (it.type === 'paciente') {
+                return `
+                <div class="patient-card" data-tipo="paciente" data-nombre="${(nombre).toLowerCase()}"
+                     data-id="${(cliente.rut || '').toLowerCase()}" data-estado="${it.estado}">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <div class="patient-avatar">${ini}</div>
+                        </div>
+                        <div class="col">
+                            <div class="d-flex align-items-center gap-2">
+                                <h6 class="mb-1">${nombre || 'Paciente'}</h6>
+                                <span class="badge bg-success badge-type">Paciente</span>
+                            </div>
+                            <p class="text-muted mb-0">
+                                <small>
+                                    <i class="fas fa-id-card me-1"></i>Cédula/RUC: ${idTexto} |
+                                    <i class="fas fa-file-medical me-1"></i>Ficha: ${it.numero_ficha}
+                                </small>
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <button class="btn btn-outline-info btn-action" onclick="verPaciente(${it.paciente_medico_id})">
+                                <i class="fas fa-eye"></i> Ver
+                            </button>
+                            <a href="/medical/pacientes-medicos/${it.paciente_medico_id}/historial/" class="btn btn-outline-primary btn-action">
+                                <i class="fas fa-history"></i> Historial Clnico
+                            </a>
+                            <a href="/medical/pacientes-medicos/${it.paciente_medico_id}/editar/" class="btn btn-outline-secondary btn-action">
+                                <i class="fas fa-edit"></i> Editar
+                            </a>
+                        </div>
+                    </div>
+                </div>`;
+            } else {
+                // Cliente sin ficha an
+                return `
+                <div class="patient-card" data-tipo="cliente" data-nombre="${(nombre).toLowerCase()}"
+                     data-id="${(cliente.rut || '').toLowerCase()}" data-estado="${it.estado}">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <div class="patient-avatar">${ini}</div>
+                        </div>
+                        <div class="col">
+                            <div class="d-flex align-items-center gap-2">
+                                <h6 class="mb-1">${nombre || 'Cliente'}</h6>
+                                <span class="badge bg-secondary badge-type">Cliente</span>
+                            </div>
+                            <p class="text-muted mb-0">
+                                <small>
+                                    <i class="fas fa-id-card me-1"></i>Cédula/RUC: ${idTexto}
+                                </small>
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <button class="btn btn-outline-info btn-action" onclick="verCliente(${it.cliente_id})">
+                                <i class="fas fa-eye"></i> Ver
+                            </button>
+                            <a href="/medical/pacientes/nuevo/?cliente_id=${it.cliente_id}" class="btn btn-success btn-action">
+                                <i class="fas fa-user-plus"></i> Crear Paciente
+                            </a>
+                        </div>
+                    </div>
+                </div>`;
+            }
+        }).join('');
+
+        container.innerHTML = html;
+    }
+    
+    function filtrarPersonas() {
+        const term = document.getElementById('searchPersona').value.toLowerCase().trim();
+        const estadoFilter = document.getElementById('filterEstado').value;
+
+        const filtrados = personasData.filter(it => {
+            const c = it.cliente || {};
+            const nombre = `${(c.nombres || '').toLowerCase()} ${(c.ap_pat || '').toLowerCase()} ${(c.ap_mat || '').toLowerCase()}`;
+            const idtxt = (c.rut || '').toLowerCase();
+            const estado = (it.estado !== undefined && it.estado !== null) ? String(it.estado) : '';
+
+            const matchSearch = !term || nombre.includes(term) || idtxt.includes(term);
+            const matchEstado = !estadoFilter || estado === estadoFilter;
+            return matchSearch && matchEstado;
+        });
+
+        mostrarPersonas(filtrados);
+    }
+    
+    function limpiarFiltros() {
+        document.getElementById('searchPersona').value = '';
+        document.getElementById('filterEstado').value = '';
+        filtrarPersonas();
+    }
+
+    function updatePersonasCount(count) {
+        document.getElementById('totalPersonasCount').textContent =
+            `${count} registro${count !== 1 ? 's' : ''}`;
+    }
+
+    // --- Detalles (Paciente) ---
+    async function verPaciente(pacienteMedicoId) {
+        const modalContent = document.getElementById('detallesPersonaContent');
+        const modal = new bootstrap.Modal(document.getElementById('modalDetallesPersona'));
+        
+        modalContent.innerHTML = '<div class="text-center"><div class="spinner-border"></div></div>';
+        modal.show();
+        
+        try {
+            const response = await fetch(`/api/pacientes-medicos/${pacienteMedicoId}`);
+            if (!response.ok) {
+                modalContent.innerHTML = '<p class="text-danger">No se pudieron cargar los detalles del paciente.</p>';
+                return;
+            }
+            const data = await response.json();
+            const payload = data.data || data;
+            const paciente = payload.paciente_medico || payload;
+            const cliente = payload.cliente || {};
+
+            modalContent.innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-user-circle me-2 text-primary"></i>Información Personal</h6>
+                        <p><strong>Nombre completo:</strong> ${cliente.nombres || ''} ${cliente.ap_pat || ''} ${cliente.ap_mat || ''}</p>
+                        <p><strong>Cédula/RUC:</strong> ${cliente.rut || 'No registrado'}</p>
+                        <p><strong>Fecha de nacimiento:</strong> ${cliente.fecha_nacimiento ? new Date(cliente.fecha_nacimiento).toLocaleDateString('es-EC') : 'No registrada'}</p>
+                        <p><strong>Número de Ficha:</strong> ${paciente.numero_ficha}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-notes-medical me-2 text-primary"></i>Información Mdica</h6>
+                        <p><strong>Antecedentes Mdicos:</strong> ${paciente.antecedentes_medicos || 'Ninguno'}</p>
+                        <p><strong>Antecedentes Oculares:</strong> ${paciente.antecedentes_oculares || 'Ninguno'}</p>
+                        <p><strong>Alergias:</strong> ${paciente.alergias || 'Ninguna'}</p>
+                        <p><strong>Medicamentos Actuales:</strong> ${paciente.medicamentos_actuales || 'Ninguno'}</p>
+                    </div>
+                    <div class="col-12 mt-3">
+                        <h6><i class="fas fa-address-book me-2 text-primary"></i>Contacto de Emergencia</h6>
+                        <p><strong>Contacto:</strong> ${paciente.contacto_emergencia || 'No registrado'}</p>
+                        <p><strong>Telfono:</strong> ${paciente.telefono_emergencia || 'No registrado'}</p>
+                    </div>
+                </div>`;
+        } catch (error) {
+            console.error('Error al cargar detalles del paciente:', error);
+            modalContent.innerHTML = '<p class="text-danger">Error de conexin al cargar los detalles.</p>';
+        }
+    }
+
+    // --- Detalles (Cliente) ---
+    async function verCliente(clienteId) {
+        const modalContent = document.getElementById('detallesPersonaContent');
+        const modal = new bootstrap.Modal(document.getElementById('modalDetallesPersona'));
+        
+        modalContent.innerHTML = '<div class="text-center"><div class="spinner-border"></div></div>';
+        modal.show();
+        
+        try {
+            const response = await fetch(`/api/clientes/${clienteId}`);
+            if (!response.ok) {
+                modalContent.innerHTML = '<p class="text-danger">No se pudieron cargar los datos del cliente.</p>';
+                return;
+            }
+            const data = await response.json();
+            const c = data.data || data;
+
+            modalContent.innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-user me-2 text-secondary"></i>Información del Cliente</h6>
+                        <p><strong>Nombre completo:</strong> ${c.nombres || ''} ${c.ap_pat || ''} ${c.ap_mat || ''}</p>
+                        <p><strong>Cédula/RUC:</strong> ${c.rut || 'No registrado'}</p>
+                        <p><strong>Fecha de nacimiento:</strong> ${c.fecha_nacimiento ? new Date(c.fecha_nacimiento).toLocaleDateString('es-EC') : 'No registrada'}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-address-card me-2 text-secondary"></i>Contacto</h6>
+                        <p><strong>Telfono:</strong> ${c.telefono || 'No registrado'}</p>
+                        <p><strong>Email:</strong> ${c.email || 'No registrado'}</p>
+                        <p><strong>Direccin:</strong> ${c.direccion || 'No registrada'}</p>
+                    </div>
+                </div>
+                <div class="text-end mt-3">
+                    <a class="btn btn-success" href="/medical/pacientes/nuevo/?cliente_id=${c.cliente_id}">
+                        <i class="fas fa-user-plus me-2"></i>Crear Paciente
+                    </a>
+                </div>`;
+        } catch (error) {
+            console.error('Error al cargar cliente:', error);
+            modalContent.innerHTML = '<p class="text-danger">Error de conexin al cargar el cliente.</p>';
+        }
+    }
+
+    function mostrarError(mensaje) {
+        document.getElementById('personasList').innerHTML = `
+            <div class="text-center py-5">
+                <i class="fas fa-exclamation-triangle fa-3x text-warning"></i>
+                <h5 class="text-warning mt-3">Error</h5>
+                <p class="text-muted">${mensaje}</p>
+            </div>`;
+    }
+</script>
+{% endblock %}

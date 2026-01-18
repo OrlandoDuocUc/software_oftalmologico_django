@@ -1,0 +1,333 @@
+{% extends "base.html" %}
+{% block title %}Compras - Oftalmetryc{% endblock %}
+
+{% block extra_css %}
+<style>
+    .card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    .table thead th {
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        color: #fff;
+        border: none;
+    }
+    .input-group-text {
+        background: var(--light-bg);
+        border: 1px solid #dee2e6;
+    }
+    .totales-box {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <h3 class="mb-0"><i class="fas fa-file-invoice-dollar me-2"></i>Registro de Compras</h3>
+        <div class="d-flex gap-2">
+            <a class="btn btn-outline-success" href="{% url 'product_html:exportar_compras_excel' %}">
+                <i class="fas fa-file-excel me-1"></i> Descargar registro de compras
+            </a>
+            <a class="btn btn-outline-secondary" href="{% url 'product_html:lista_proveedores' %}">
+                <i class="fas fa-truck me-1"></i> Ir a Proveedores
+            </a>
+        </div>
+    </div>
+
+    {% if messages %}
+    <div class="mb-3">
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <strong>Datos de la compra</strong>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Proveedor</label>
+                        <select name="proveedor_id" class="form-select" required>
+                            <option value="">Seleccione</option>
+                            {% for prov in proveedores %}
+                            <option value="{{ prov.proveedor_id }}">{{ prov.razon_social }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">N° Factura</label>
+                        <input type="text" name="numero_factura" class="form-control" placeholder="001-001-000000000">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">RUC / C.I.</label>
+                        <input type="text" name="ruc_ci" class="form-control">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Fecha pedido</label>
+                        <input type="date" name="fecha_pedido" class="form-control" value="{{ today|default:'' }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Fecha pago</label>
+                        <input type="date" name="fecha_pago" class="form-control">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Forma de pago</label>
+                        <input type="text" name="forma_pago" class="form-control" placeholder="Efectivo / Tarjeta / Crédito">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Plazo</label>
+                        <input type="text" name="plazo_pago" class="form-control" placeholder="3 meses / Contado">
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label">Notas</label>
+                        <textarea name="notas" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <strong>Detalle de compra</strong>
+                <button type="button" class="btn btn-sm btn-primary" onclick="agregarLinea()">
+                    <i class="fas fa-plus me-1"></i>Agregar
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table mb-0 align-middle" id="tabla-detalles">
+                        <thead>
+                            <tr>
+                                <th style="min-width: 180px;">Producto</th>
+                                <th>Marca</th>
+                                <th>Código</th>
+                                <th style="width: 80px;">Cant.</th>
+                                <th style="width: 130px;">Precio</th>
+                                <th style="width: 110px;">Tarifa IVA</th>
+                                <th style="width: 120px;">Descuento</th>
+                                <th style="width: 140px;">Total línea</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header"><strong>Firmas / control</strong></div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Código Elaborado</label>
+                                <input type="text" name="elaborado_codigo" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Elaborado por</label>
+                                <input type="text" name="elaborado_nombre" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Código Autorizado</label>
+                                <input type="text" name="autorizado_codigo" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Autorizado por</label>
+                                <input type="text" name="autorizado_nombre" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Código Recibido</label>
+                                <input type="text" name="recibido_codigo" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Recibido por</label>
+                                <input type="text" name="recibido_nombre" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Estado</label>
+                                <select name="estado" class="form-select">
+                                    <option value="borrador">Borrador</option>
+                                    <option value="confirmado">Confirmado</option>
+                                    <option value="pagado">Pagado</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Abono</label>
+                                <input type="number" step="0.01" name="abono" class="form-control" value="0">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="totales-box">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Subtotal (15%)</span><strong id="subtotal15">0.00</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Subtotal (5%)</span><strong id="subtotal5">0.00</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Subtotal (0%)</span><strong id="subtotal0">0.00</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Descuento</span><strong id="descuentoTotal">0.00</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>IVA 15%</span><strong id="iva15">0.00</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>IVA 5%</span><strong id="iva5">0.00</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Total a pagar</span><strong id="totalPagar">0.00</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Saldo</span><strong id="saldo">0.00</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-end mb-4">
+            <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Guardar compra</button>
+        </div>
+    </form>
+
+    <div class="card">
+        <div class="card-header"><strong>Compras recientes</strong></div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table mb-0 table-hover">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Proveedor</th>
+                            <th>Factura</th>
+                            <th>Fecha pedido</th>
+                            <th>Subtotal</th>
+                            <th>IVA</th>
+                            <th>Total</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in compras %}
+                        <tr>
+                            <td>{{ c.compra_id }}</td>
+                            <td>{{ c.proveedor.razon_social }}</td>
+                            <td>{{ c.numero_factura|default:"-" }}</td>
+                            <td>{{ c.fecha_pedido|date:"d/m/Y" }}</td>
+                            <td>{{ c.subtotal_general|floatformat:2 }}</td>
+                            <td>{{ c.iva_15|floatformat:2|add:c.iva_5|floatformat:2 }}</td>
+                            <td><strong>{{ c.total_pagar|floatformat:2 }}</strong></td>
+                            <td>{{ c.estado|default:"-" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="8" class="text-center py-3">Aún no hay compras registradas.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+
+    function agregarLinea() {
+        const tbody = document.querySelector('#tabla-detalles tbody');
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>
+                <select name="detalle_producto_id[]" class="form-select detalle-producto" required>
+                    <option value="">Seleccione</option>
+                    {% for p in productos %}
+                    <option value="{{ p.producto_id }}" data-marca="{{ p.marca|default_if_none:'' }}" data-codigo="{{ p.codigo|default_if_none:'' }}">{{ p.nombre }} ({{ p.codigo|default:'N/A' }})</option>
+                    {% endfor %}
+                </select>
+            </td>
+            <td><input type="text" name="detalle_marca[]" class="form-control" placeholder="Marca"></td>
+            <td><input type="text" name="detalle_codigo[]" class="form-control" placeholder="Código"></td>
+            <td><input type="number" min="1" step="1" name="detalle_cantidad[]" class="form-control detalle-cantidad" value="1"></td>
+            <td><input type="number" min="0" step="0.01" name="detalle_precio_unitario[]" class="form-control detalle-precio" value="0"></td>
+            <td>
+                <select name="detalle_tarifa_iva[]" class="form-select detalle-tarifa">
+                    <option value="0">0%</option>
+                    <option value="0.05">5%</option>
+                    <option value="0.15" selected>15%</option>
+                </select>
+            </td>
+            <td><input type="number" min="0" step="0.01" name="detalle_descuento[]" class="form-control detalle-descuento" value="0"></td>
+            <td class="text-end fw-bold total-linea">0.00</td>
+            <td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger" onclick="eliminarLinea(this)"><i class="fas fa-times"></i></button></td>
+        `;
+        tbody.appendChild(row);
+        recalcular();
+    }
+
+    function eliminarLinea(btn) {
+        const row = btn.closest('tr');
+        row.remove();
+        recalcular();
+    }
+
+    function recalcular() {
+        let subtotal15 = 0, subtotal5 = 0, subtotal0 = 0, descTotal = 0, iva15 = 0, iva5 = 0;
+        document.querySelectorAll('#tabla-detalles tbody tr').forEach(row => {
+            const qty = parseFloat(row.querySelector('.detalle-cantidad').value || 0);
+            const price = parseFloat(row.querySelector('.detalle-precio').value || 0);
+            const tarifa = parseFloat(row.querySelector('.detalle-tarifa').value || 0);
+            const desc = parseFloat(row.querySelector('.detalle-descuento').value || 0);
+
+            const base = qty * price;
+            const baseDesc = base - desc;
+            const iva = baseDesc * tarifa;
+            const totalLinea = baseDesc + iva;
+
+            descTotal += desc;
+            if (tarifa === 0.15) { subtotal15 += baseDesc; iva15 += iva; }
+            else if (tarifa === 0.05) { subtotal5 += baseDesc; iva5 += iva; }
+            else { subtotal0 += baseDesc; }
+
+            row.querySelector('.total-linea').textContent = totalLinea.toFixed(2);
+        });
+
+        const totalPagar = subtotal15 + subtotal5 + subtotal0 + iva15 + iva5;
+        document.getElementById('subtotal15').textContent = subtotal15.toFixed(2);
+        document.getElementById('subtotal5').textContent = subtotal5.toFixed(2);
+        document.getElementById('subtotal0').textContent = subtotal0.toFixed(2);
+        document.getElementById('descuentoTotal').textContent = descTotal.toFixed(2);
+        document.getElementById('iva15').textContent = iva15.toFixed(2);
+        document.getElementById('iva5').textContent = iva5.toFixed(2);
+        document.getElementById('totalPagar').textContent = totalPagar.toFixed(2);
+
+        const abono = parseFloat(document.querySelector('input[name="abono"]').value || 0);
+        document.getElementById('saldo').textContent = (totalPagar - abono).toFixed(2);
+    }
+
+    document.addEventListener('input', function(e) {
+        if (e.target.closest('#tabla-detalles')) recalcular();
+        if (e.target.name === 'abono') recalcular();
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        agregarLinea();
+    });
+</script>
+{% endblock %}

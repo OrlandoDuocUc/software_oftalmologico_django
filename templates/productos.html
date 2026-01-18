@@ -1,0 +1,528 @@
+{% extends "base.html" %}
+
+{% block title %}Gestión de Productos - Oftalmetryc{% endblock %}
+
+{% block extra_css %}
+/* ESTILOS ESPECÍFICOS DE PRODUCTOS */
+.card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+.card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.15); }
+.table th { background: linear-gradient(135deg, #3498db, #2980b9); color: white; border: none; font-weight: 600; }
+.btn-primary { background: linear-gradient(135deg, #3498db, #2980b9); border: none; transition: all 0.3s ease; }
+.btn-primary:hover { background: linear-gradient(135deg, #2980b9, #1f618d); transform: translateY(-1px); }
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center mb-4" style="font-family: 'Segoe UI', sans-serif; font-weight: bold; color: #2c3e50; letter-spacing: 2px;">Gestión de Productos</h1>
+
+    <!-- Formulario para crear nuevo producto -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Crear Nuevo Producto</h5>
+        </div>
+        <div class="card-body">
+            <form method="post" action="{% url 'product_html:productos' %}" id="formCrearProducto">
+                {% csrf_token %}
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="fecha" class="form-label">Fecha <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" id="fecha" name="fecha" required>
+                    </div>
+                    <div class="col-md-8 mb-3">
+                        <label for="nombre" class="form-label">Nombre del Producto <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="nombre" name="nombre" required>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="distribuidor" class="form-label">Distribuidor</label>
+                        <input type="text" class="form-control" id="distribuidor" name="distribuidor" placeholder="Ej: Óptica Nacional S.A.">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="marca" class="form-label">Marca</label>
+                        <input type="text" class="form-control" id="marca" name="marca" placeholder="Ej: Ray-Ban">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="material" class="form-label">Material</label>
+                        <input type="text" class="form-control" id="material" name="material" placeholder="Ej: Acetato, Metal">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="tipo_armazon" class="form-label">Tipo Armazón</label>
+                        <input type="text" class="form-control" id="tipo_armazon" name="tipo_armazon" placeholder="Ej: Completo, Semi-al-aire">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="codigo" class="form-label">Código</label>
+                        <input type="text" class="form-control" id="codigo" name="codigo" placeholder="Ej: RB3025">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="diametro_1" class="form-label">Diámetro 1</label>
+                        <input type="text" class="form-control" id="diametro_1" name="diametro_1" placeholder="Ej: 52mm">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="diametro_2" class="form-label">Diámetro 2</label>
+                        <input type="text" class="form-control" id="diametro_2" name="diametro_2" placeholder="Ej: 18mm">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="color" class="form-label">Color</label>
+                        <input type="text" class="form-control" id="color" name="color" placeholder="Ej: Negro, Dorado">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="cantidad" class="form-label">Cantidad <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="cantidad" name="cantidad" min="0" value="0" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="costo_unitario" class="form-label">Costo Unitario (sin IVA) <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="costo_unitario" name="costo_unitario" step="0.01" min="0" required>
+                        <small class="text-muted">El precio ingresado no incluye IVA (15%).</small>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Costo Unitario + IVA (15%)</label>
+                        <input type="text" class="form-control" id="costo_unitario_iva" readonly value="0.00">
+                        <small class="text-muted">Se calcula automáticamente.</small>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12 mb-3">
+                        <label for="descripcion" class="form-label">Descripción</label>
+                        <textarea class="form-control" id="descripcion" name="descripcion" rows="2" placeholder="Descripción adicional del producto"></textarea>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-plus me-2"></i>Crear Producto</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabla de productos -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Productos Existentes</h5>
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    <input type="text" id="buscadorProductos" class="form-control" placeholder="Buscar por código, nombre, distribuidor o marca...">
+                </div>
+                <small class="text-muted">El buscador filtra en tiempo real por código, nombre, distribuidor y marca</small>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-bordered table-sm" id="tablaProductos">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ID</th>
+                            <th>Fecha</th>
+                            <th>Nombre</th>
+                            <th>Distribuidor</th>
+                            <th>Marca</th>
+                            <th>Código</th>
+                            <th>Color</th>
+                            <th>Cantidad</th>
+                            <th>Costo Unit.</th>
+                            <th>Costo Unit. + IVA</th>
+                            <th>P. Venta 1</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if products|length == 0 %}
+                        <tr>
+                            <td colspan="12" class="text-center">No hay productos activos registrados.</td>
+                        </tr>
+                        {% else %}
+                        {% for p in products %}
+                        <tr data-nombre="{{ p.nombre|default_if_none:''|lower }}"
+                            data-distribuidor="{{ p.distribuidor|default_if_none:''|lower }}"
+                            data-marca="{{ p.marca|default_if_none:''|lower }}"
+                            data-codigo="{{ p.codigo|default_if_none:''|lower }}">
+                            <td>{{ p.producto_id }}</td>
+                            <td><small>{{ p.fecha|date:"d/m/Y"|default:"N/A" }}</small></td>
+                            <td><strong>{{ p.nombre }}</strong></td>
+                            <td><small>{{ p.distribuidor|default:"-" }}</small></td>
+                            <td><span class="badge bg-secondary">{{ p.marca|default:"-" }}</span></td>
+                            <td><code>{{ p.codigo|default:"-" }}</code></td>
+                            <td>{{ p.color|default:"-" }}</td>
+                            <td>
+                                <span class="badge {% if p.cantidad > 10 %}bg-success{% elif p.cantidad > 0 %}bg-warning{% else %}bg-danger{% endif %}">
+                                    {{ p.cantidad|default:0 }}
+                                </span>
+                            </td>
+                            <td>{{ p.costo_unitario|default:0|currency }}</td>
+                            <td>{{ p.precio_iva|default_if_none:p.costo_unitario|currency }}</td>
+                            <td><strong>{{ p.costo_venta_1|default:0|currency }}</strong></td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <button class="btn btn-info btn-sm" onclick="verDetalles(this)" title="Ver Detalles"
+                                        data-nombre="{{ p.nombre }}"
+                                        data-distribuidor="{{ p.distribuidor|default_if_none:'' }}"
+                                        data-marca="{{ p.marca|default_if_none:'' }}"
+                                        data-material="{{ p.material|default_if_none:'' }}"
+                                        data-tipo-armazon="{{ p.tipo_armazon|default_if_none:'' }}"
+                                        data-codigo="{{ p.codigo|default_if_none:'' }}"
+                                        data-diametro1="{{ p.diametro_1|default_if_none:'' }}"
+                                        data-diametro2="{{ p.diametro_2|default_if_none:'' }}"
+                                        data-color="{{ p.color|default_if_none:'' }}"
+                                        data-cantidad="{{ p.cantidad|default:0 }}"
+                                        data-costo-unitario="{{ p.costo_unitario|default:0 }}"
+                                        data-precio-iva="{{ p.precio_iva|default_if_none:p.costo_unitario|default:0 }}"
+                                        data-costo-venta1="{{ p.costo_venta_1|default:0 }}"
+                                        data-costo-venta2="{{ p.costo_venta_2|default:0 }}"
+                                        data-descripcion="{{ p.descripcion|default_if_none:'' }}"
+                                        data-fecha="{{ p.fecha|date:'d/m/Y' }}">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalEditarProducto"
+                                        data-product-id="{{ p.producto_id }}"
+                                        data-fecha="{{ p.fecha|date:'Y-m-d' }}"
+                                        data-nombre="{{ p.nombre }}"
+                                        data-distribuidor="{{ p.distribuidor|default_if_none:'' }}"
+                                        data-marca="{{ p.marca|default_if_none:'' }}"
+                                        data-material="{{ p.material|default_if_none:'' }}"
+                                        data-tipo-armazon="{{ p.tipo_armazon|default_if_none:'' }}"
+                                        data-codigo="{{ p.codigo|default_if_none:'' }}"
+                                        data-diametro1="{{ p.diametro_1|default_if_none:'' }}"
+                                        data-diametro2="{{ p.diametro_2|default_if_none:'' }}"
+                                        data-color="{{ p.color|default_if_none:'' }}"
+                                        data-cantidad="{{ p.cantidad|default:0 }}"
+                                        data-costo-unitario="{{ p.costo_unitario|default:0 }}"
+                                        data-precio-iva="{{ p.precio_iva|default_if_none:p.costo_unitario|default:0 }}"
+                                        data-descripcion="{{ p.descripcion|default_if_none:'' }}"
+                                        title="Editar Producto">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#modalEliminar" data-producto-id="{{ p.producto_id }}" title="Eliminar">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {% if deleted_products %}
+    <div class="card mt-5">
+        <div class="card-header bg-secondary text-white">
+            <h5 class="mb-0">Eliminados recientes</h5>
+        </div>
+        <div class="card-body">
+            <table class="table table-bordered">
+                <thead class="table-secondary">
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Descripción</th>
+                        <th>Precio</th>
+                        <th>Cantidad</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in deleted_products %}
+                    <tr>
+                        <td>{{ p.producto_id }}</td>
+                        <td>{{ p.nombre }}</td>
+                        <td>{{ p.descripcion }}</td>
+                        <td>{{ p.costo_venta_1|default:0|currency }}</td>
+                        <td>{{ p.cantidad|default:0 }}</td>
+                        <td>
+                            <form method="post" action="{% url 'product_html:restaurar_producto' p.producto_id %}" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-success btn-sm" onclick="return confirm('¿Restaurar este producto?')">
+                                    <i class="fa fa-undo"></i> Restaurar
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <a href="{% url 'product_html:productos' %}" class="btn btn-outline-primary mt-2"><i class="fa fa-arrow-left"></i> Volver a productos</a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modales -->
+<div class="modal fade" id="modalEditarProducto" tabindex="-1" aria-labelledby="modalEditarProductoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalEditarProductoLabel">Editar Producto</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <form id="formEditarProducto" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="hidden" name="producto_id" id="editarProductoId">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="editarFecha" class="form-label">Fecha</label>
+                            <input type="date" class="form-control" id="editarFecha" name="fecha">
+                        </div>
+                        <div class="col-md-8 mb-3">
+                            <label for="editarNombreProducto" class="form-label">Nombre</label>
+                            <input type="text" class="form-control" id="editarNombreProducto" name="nombre" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="editarDistribuidor" class="form-label">Distribuidor</label>
+                            <input type="text" class="form-control" id="editarDistribuidor" name="distribuidor">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="editarMarcaProducto" class="form-label">Marca</label>
+                            <input type="text" class="form-control" id="editarMarcaProducto" name="marca">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="editarMaterial" class="form-label">Material</label>
+                            <input type="text" class="form-control" id="editarMaterial" name="material">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="editarTipoArmazon" class="form-label">Tipo Armazón</label>
+                            <input type="text" class="form-control" id="editarTipoArmazon" name="tipo_armazon">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="editarCodigo" class="form-label">Código</label>
+                            <input type="text" class="form-control" id="editarCodigo" name="codigo">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="editarDiametro1" class="form-label">Diámetro 1</label>
+                            <input type="text" class="form-control" id="editarDiametro1" name="diametro_1">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="editarDiametro2" class="form-label">Diámetro 2</label>
+                            <input type="text" class="form-control" id="editarDiametro2" name="diametro_2">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="editarColor" class="form-label">Color</label>
+                            <input type="text" class="form-control" id="editarColor" name="color">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="editarCantidad" class="form-label">Cantidad</label>
+                            <input type="number" class="form-control" id="editarCantidad" name="cantidad" min="0" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="editarCostoUnitario" class="form-label">Costo Unitario (sin IVA)</label>
+                            <input type="number" class="form-control" id="editarCostoUnitario" name="costo_unitario" step="0.01" min="0" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Costo Unitario + IVA (15%)</label>
+                            <input type="text" class="form-control" id="editarCostoUnitarioIva" readonly>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label for="editarDescripcionProducto" class="form-label">Descripción</label>
+                            <textarea class="form-control" id="editarDescripcionProducto" name="descripcion" rows="2"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalEliminar" tabindex="-1" aria-labelledby="modalEliminarLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalEliminarLabel">Confirmar eliminación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                ¿Estás seguro de que quieres eliminar este producto?
+            </div>
+            <div class="modal-footer">
+                <form id="formEliminarProducto" method="post">
+                    {% csrf_token %}
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger">Eliminar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalExito" tabindex="-1" aria-labelledby="modalExitoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="modalExitoLabel">
+                    <i class="fas fa-check-circle me-2"></i>¡Éxito!
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <i class="fas fa-check-circle text-success" style="font-size: 3rem;"></i>
+                <h4 class="mt-3">Producto guardado correctamente</h4>
+                <p class="text-muted">El producto ha sido registrado en el inventario.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" data-bs-dismiss="modal">Aceptar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    const editUrlTemplate = "{% url 'product_html:editar_producto' 0 %}";
+    const deleteUrlTemplate = "{% url 'product_html:eliminar_producto' 0 %}";
+    const IVA_RATE = 0.15;
+
+    function calcularPrecioIva(origenId, destinoId) {
+        const origen = document.getElementById(origenId);
+        const destino = document.getElementById(destinoId);
+        if (!origen || !destino) return;
+        const valor = parseFloat(origen.value || 0);
+        destino.value = (valor * (1 + IVA_RATE)).toFixed(2);
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const fechaInput = document.getElementById('fecha');
+        if (fechaInput && !fechaInput.value) {
+            fechaInput.value = new Date().toISOString().split('T')[0];
+        }
+        calcularPrecioIva('costo_unitario', 'costo_unitario_iva');
+        const costoInput = document.getElementById('costo_unitario');
+        if (costoInput) {
+            costoInput.addEventListener('input', () => calcularPrecioIva('costo_unitario', 'costo_unitario_iva'));
+        }
+    });
+
+    const buscadorInput = document.getElementById('buscadorProductos');
+    if (buscadorInput) {
+        buscadorInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase().trim();
+            const rows = document.querySelectorAll('#tablaProductos tbody tr');
+            rows.forEach(row => {
+                const nombre = row.dataset.nombre;
+                const distribuidor = row.dataset.distribuidor;
+                const marca = row.dataset.marca;
+                const codigo = row.dataset.codigo;
+                const matches = !searchTerm ||
+                    nombre.includes(searchTerm) ||
+                    distribuidor.includes(searchTerm) ||
+                    marca.includes(searchTerm) ||
+                    codigo.includes(searchTerm);
+                row.style.display = matches ? '' : 'none';
+            });
+        });
+    }
+
+    const modalEditarProducto = document.getElementById('modalEditarProducto');
+    if (modalEditarProducto) {
+        modalEditarProducto.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const get = (attr) => button.getAttribute(attr) || '';
+            const productoId = get('data-product-id');
+
+            document.getElementById('editarProductoId').value = productoId;
+            document.getElementById('editarFecha').value = get('data-fecha');
+            document.getElementById('editarNombreProducto').value = get('data-nombre');
+            document.getElementById('editarDistribuidor').value = get('data-distribuidor');
+            document.getElementById('editarMarcaProducto').value = get('data-marca');
+            document.getElementById('editarMaterial').value = get('data-material');
+            document.getElementById('editarTipoArmazon').value = get('data-tipo-armazon');
+            document.getElementById('editarCodigo').value = get('data-codigo');
+            document.getElementById('editarDiametro1').value = get('data-diametro1');
+            document.getElementById('editarDiametro2').value = get('data-diametro2');
+            document.getElementById('editarColor').value = get('data-color');
+            document.getElementById('editarCantidad').value = get('data-cantidad');
+            document.getElementById('editarCostoUnitario').value = get('data-costo-unitario');
+            const precioIva = parseFloat(get('data-precio-iva') || '0');
+            document.getElementById('editarCostoUnitarioIva').value = precioIva.toFixed(2);
+            document.getElementById('editarDescripcionProducto').value = get('data-descripcion');
+
+            document.getElementById('formEditarProducto').action = editUrlTemplate.replace('0/', `${productoId}/`);
+        });
+
+        const costoEdit = document.getElementById('editarCostoUnitario');
+        if (costoEdit) {
+            costoEdit.addEventListener('input', () => calcularPrecioIva('editarCostoUnitario', 'editarCostoUnitarioIva'));
+        }
+    }
+
+    const modalEliminar = document.getElementById('modalEliminar');
+    if (modalEliminar) {
+        modalEliminar.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const productoId = button.getAttribute('data-producto-id');
+            document.getElementById('formEliminarProducto').action = deleteUrlTemplate.replace('0/', `${productoId}/`);
+        });
+    }
+
+    function verDetalles(button) {
+        const producto = {
+            nombre: button.getAttribute('data-nombre') || '',
+            distribuidor: button.getAttribute('data-distribuidor') || 'N/A',
+            marca: button.getAttribute('data-marca') || 'N/A',
+            material: button.getAttribute('data-material') || 'N/A',
+            tipoArmazon: button.getAttribute('data-tipo-armazon') || 'N/A',
+            codigo: button.getAttribute('data-codigo') || 'N/A',
+            diametro1: button.getAttribute('data-diametro1') || 'N/A',
+            diametro2: button.getAttribute('data-diametro2') || 'N/A',
+            color: button.getAttribute('data-color') || 'N/A',
+            cantidad: button.getAttribute('data-cantidad') || 0,
+            costoUnitario: button.getAttribute('data-costo-unitario') || 0,
+            precioIva: button.getAttribute('data-precio-iva') || 0,
+            costoVenta1: button.getAttribute('data-costo-venta1') || 0,
+            costoVenta2: button.getAttribute('data-costo-venta2') || 0,
+            descripcion: button.getAttribute('data-descripcion') || 'Sin descripción',
+            fecha: button.getAttribute('data-fecha') || 'N/A'
+        };
+        Swal.fire({
+            title: `<strong>${producto.nombre}</strong>`,
+            html: `
+                <div class="text-start">
+                    <p><strong>Fecha:</strong> ${producto.fecha}</p>
+                    <p><strong>Distribuidor:</strong> ${producto.distribuidor}</p>
+                    <p><strong>Marca:</strong> ${producto.marca}</p>
+                    <p><strong>Material:</strong> ${producto.material}</p>
+                    <p><strong>Tipo Armazón:</strong> ${producto.tipoArmazon}</p>
+                    <p><strong>Código:</strong> ${producto.codigo}</p>
+                    <p><strong>Diámetros:</strong> ${producto.diametro1} / ${producto.diametro2}</p>
+                    <p><strong>Color:</strong> ${producto.color}</p>
+                    <p><strong>Cantidad:</strong> ${producto.cantidad}</p>
+                    <p><strong>Costo Unitario:</strong> ${producto.costoUnitario}</p>
+                    <p><strong>Costo Unitario + IVA:</strong> ${producto.precioIva}</p>
+                    <p><strong>Precio Venta 1:</strong> ${producto.costoVenta1}</p>
+                    <p><strong>Precio Venta 2:</strong> ${producto.costoVenta2}</p>
+                    <p><strong>Descripción:</strong> ${producto.descripcion}</p>
+                </div>
+            `,
+            icon: 'info',
+            showCloseButton: true,
+            width: '500px'
+        });
+    }
+</script>
+{% endblock %}

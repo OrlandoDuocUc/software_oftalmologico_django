@@ -1,0 +1,706 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Biomicroscop&iacute;a - Oftalmetryc{% endblock %}
+
+{% block extra_css %}
+.bio-page {
+    background: #f5f7fa;
+}
+.bio-section {
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+}
+.bio-header {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    padding: 32px;
+    border-radius: 16px;
+    margin-bottom: 28px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+}
+.bio-header h1 {
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+.bio-header .eye-icon {
+    font-size: 3.2rem;
+    opacity: 0.85;
+}
+.bio-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 10px;
+}
+.bio-table th,
+.bio-table td {
+    padding: 6px 10px;
+    border: 1px solid #d9dee5;
+    vertical-align: middle;
+    font-size: 0.95rem;
+}
+.bio-table thead th {
+    background: #eef2f7;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--primary-color);
+}
+.line-input {
+    width: 100%;
+    border: none;
+    border-bottom: 1px solid #c0c6d0;
+    background: transparent;
+    padding: 4px 2px;
+    font-size: 0.95rem;
+}
+.line-input:focus,
+.line-area:focus {
+    outline: none;
+    border-bottom-color: var(--secondary-color);
+}
+.line-area {
+    width: 100%;
+    border: none;
+    border-bottom: 1px solid #c0c6d0;
+    background: transparent;
+    resize: none;
+    padding: 6px 4px;
+    font-size: 0.95rem;
+}
+.subheading {
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--primary-color);
+    margin-bottom: 14px;
+}
+.fundus-container {
+    display: flex;
+    justify-content: space-between;
+    gap: 60px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+}
+.fundus-column {
+    text-align: center;
+    flex: 0 0 32%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.fundus-placeholder {
+    width: 220px;
+    height: 220px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    background: transparent;
+}
+.fundus-img {
+    max-width: 100%;
+    height: auto;
+    object-fit: contain;
+}
+.signature-box {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    margin-top: 26px;
+}
+.signature-line {
+    border-bottom: 1px solid #7e8796;
+    padding-top: 28px;
+    min-width: 220px;
+    text-align: center;
+    font-size: 0.95rem;
+}
+.bio-eye-strip {
+    display: flex;
+    justify-content: center;
+    gap: 72px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    margin-bottom: 16px;
+}
+.bio-eye-illustration {
+    text-align: center;
+}
+.bio-eye-img {
+    width: 140px;
+    max-width: 100%;
+    height: auto;
+    object-fit: contain;
+}
+.bio-eye-label {
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    margin-top: 6px;
+}
+@media print {
+    body {
+        background: white !important;
+    }
+    .bio-page,
+    .bio-section,
+    .bio-header {
+        box-shadow: none !important;
+    }
+    .bio-header {
+        background: #1f3f5b !important;
+        -webkit-print-color-adjust: exact;
+    }
+}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5 bio-page">
+  <div class="bio-header text-center">
+    <div class="row align-items-center">
+      <div class="col-12 col-md-3 text-center text-md-end mb-3 mb-md-0">
+        <i class="fas fa-eye eye-icon"></i>
+      </div>
+      <div class="col-12 col-md-6">
+        <h1>Biomicroscop&iacute;a</h1>
+        <p class="mb-0">OFTALMETRYC</p>
+      </div>
+      <div class="col-12 col-md-3 text-center text-md-start mt-3 mt-md-0">
+        <i class="fas fa-eye eye-icon"></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- si venimos desde /consultas/<id>/biomicroscopia -->
+  <input type="hidden" id="fichaIdHidden" value="{{ consulta_id|default:'' }}">
+
+  <form id="biomicroscopiaForm">
+    <div class="bio-section">
+      <h4 class="subheading"><i class="fas fa-user me-2"></i>Paciente</h4>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label for="pacienteMedicoId" class="form-label">Buscar paciente por nombre o C&eacute;dula/RUC <span class="text-danger">*</span></label>
+          <input id="pacienteMedicoId" placeholder="Escribe nombre, c&eacute;dula o RUC" required>
+          <div class="small text-muted mt-1">Selecciona un paciente para habilitar el guardado del examen.</div>
+        </div>
+        <div class="col-md-3">
+          <label for="pacienteDoc" class="form-label">Documento</label>
+          <input type="text" class="form-control" id="pacienteDoc" readonly>
+        </div>
+        <div class="col-md-3">
+          <label for="pacienteNombre" class="form-label">Nombre</label>
+          <input type="text" class="form-control" id="pacienteNombre" readonly>
+        </div>
+      </div>
+      <div class="row g-3 mt-1">
+        <div class="col-md-4">
+          <label for="fechaExamen" class="form-label">Fecha del examen</label>
+          <input type="datetime-local" class="form-control" id="fechaExamen">
+        </div>
+        <div class="col-md-8 d-flex align-items-end">
+          <div class="small text-muted">El enlace al historial se actualizar&aacute; con el paciente seleccionado.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bio-section">
+      <div class="bio-eye-strip">
+        <div class="bio-eye-illustration">
+          <img
+            src="{% static 'img/ojo_derecho.png' %}"
+            alt="Ojo derecho"
+            class="bio-eye-img"
+          >
+        </div>
+        <div class="bio-eye-illustration">
+          <img
+            src="{% static 'img/ojo_izquierdo.png' %}"
+            alt="Ojo izquierdo"
+            class="bio-eye-img"
+          >
+        </div>
+      </div>
+      <h4 class="subheading"><i class="fas fa-microscope me-2"></i>Biomicroscop&iacute;a anterior</h4>
+      <table class="bio-table">
+      <thead>
+        <tr>
+          <th style="width:32%;">OD</th>
+          <th style="width:36%;">Descripci&oacute;n</th>
+          <th style="width:32%;">OI</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for od_field, label, oi_field in bio_rows %}
+        <tr>
+          <td><input type="text" class="line-input js-bio-field" data-group="biomicroscopia" name="{{ od_field }}" id="{{ od_field }}"></td>
+          <td class="text-uppercase small fw-semibold text-muted">{{ label|safe }}</td>
+          <td><input type="text" class="line-input js-bio-field" data-group="biomicroscopia" name="{{ oi_field }}" id="{{ oi_field }}"></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="fw-semibold text-uppercase small text-muted">Pupila OD (mm / reacci&oacute;n)</label>
+        <div class="d-flex gap-2">
+          <input type="text" class="line-input js-bio-field" data-group="biomicroscopia" name="pupila_od_mm" id="pupila_od_mm" placeholder="mm">
+          <input type="text" class="line-input js-bio-field" data-group="biomicroscopia" name="pupila_od_reaccion" id="pupila_od_reaccion" placeholder="Reacci&oacute;n">
+        </div>
+      </div>
+      <div class="col-md-6">
+        <label class="fw-semibold text-uppercase small text-muted">Pupila OI (mm / reacci&oacute;n)</label>
+        <div class="d-flex gap-2">
+          <input type="text" class="line-input js-bio-field" data-group="biomicroscopia" name="pupila_oi_mm" id="pupila_oi_mm" placeholder="mm">
+          <input type="text" class="line-input js-bio-field" data-group="biomicroscopia" name="pupila_oi_reaccion" id="pupila_oi_reaccion" placeholder="Reacci&oacute;n">
+        </div>
+      </div>
+    </div>
+    <div class="mt-3">
+      <label class="fw-semibold text-uppercase small text-muted">Observaciones generales</label>
+      <textarea class="line-area js-bio-field" data-group="biomicroscopia" rows="2" name="observaciones_generales" id="observaciones_generales"></textarea>
+    </div>
+    <div class="mt-3">
+      <label class="fw-semibold text-uppercase small text-muted">Otros</label>
+      <textarea class="line-area js-bio-field" data-group="biomicroscopia" rows="2" name="otros_detalles" id="otros_detalles"></textarea>
+    </div>
+  </div>
+
+    <div class="bio-section">
+      <h4 class="subheading"><i class="fas fa-circle-notch me-2"></i>Reflejos pupilares</h4>
+    <table class="bio-table">
+      <thead>
+        <tr>
+          <th style="width:20%;"></th>
+          <th style="width:30%;">Acomodativo</th>
+          <th style="width:30%;">Fotomotor</th>
+          <th style="width:20%;">Consensual</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th class="text-uppercase small text-muted">AO</th>
+          <td><input type="text" class="line-input js-bio-field" data-group="reflejos" name="acomodativo_uno" id="acomodativo_uno" placeholder="Miosis"></td>
+          <td><input type="text" class="line-input js-bio-field" data-group="reflejos" name="fotomotor_uno" id="fotomotor_uno" placeholder="Miosis"></td>
+          <td><input type="text" class="line-input js-bio-field" data-group="reflejos" name="consensual_uno" id="consensual_uno" placeholder="OD"></td>
+        </tr>
+        <tr>
+          <th class="text-uppercase small text-muted">AO</th>
+          <td><input type="text" class="line-input js-bio-field" data-group="reflejos" name="acomodativo_dos" id="acomodativo_dos" placeholder="Convergencia"></td>
+          <td><input type="text" class="line-input js-bio-field" data-group="reflejos" name="fotomotor_dos" id="fotomotor_dos" placeholder="Midriasis"></td>
+          <td><input type="text" class="line-input js-bio-field" data-group="reflejos" name="consensual_dos" id="consensual_dos" placeholder="OI"></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="mt-3">
+      <label class="fw-semibold text-uppercase small text-muted">Observaciones</label>
+      <textarea class="line-area js-bio-field" data-group="reflejos" rows="2" name="observaciones" id="reflejos_observaciones"></textarea>
+    </div>
+  </div>
+
+    <div class="bio-section">
+      <h4 class="subheading"><i class="fas fa-eye me-2"></i>Fondo de ojo</h4>
+    <div class="fundus-container">
+      <div class="fundus-column">
+        <div class="fundus-placeholder mb-3">
+          <img
+            src="{% static 'img/fondo_ojo_derecho.png' %}"
+            alt="Fondo ojo derecho"
+            class="fundus-img"
+          >
+        </div>
+      </div>
+      <div class="fundus-column">
+        <div class="fundus-placeholder mb-3">
+          <img
+            src="{% static 'img/fondo_ojo_izquierdo.png' %}"
+            alt="Fondo ojo izquierdo"
+            class="fundus-img"
+          >
+        </div>
+      </div>
+    </div>
+    <table class="bio-table">
+      <thead>
+        <tr>
+          <th>OD</th>
+          <th>Descripci&oacute;n</th>
+          <th>OI</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for od_field, label, oi_field in fondo_rows %}
+        <tr>
+          <td><input type="text" class="line-input js-bio-field" data-group="fondo" name="{{ od_field }}" id="{{ od_field }}"></td>
+          <td class="text-uppercase small fw-semibold text-muted">{{ label|safe }}</td>
+          <td><input type="text" class="line-input js-bio-field" data-group="fondo" name="{{ oi_field }}" id="{{ oi_field }}"></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div class="mt-3">
+      <label class="fw-semibold text-uppercase small text-muted">Observaciones</label>
+      <textarea class="line-area js-bio-field" data-group="fondo" rows="2" name="observaciones" id="fondo_observaciones"></textarea>
+    </div>
+    <div class="mt-3">
+      <label class="fw-semibold text-uppercase small text-muted">Otros</label>
+      <textarea class="line-area js-bio-field" data-group="fondo" rows="2" name="otros_detalles" id="fondo_otros"></textarea>
+    </div>
+  </div>
+
+    <div class="bio-section">
+      <h4 class="subheading"><i class="fas fa-notes-medical me-2"></i>Diagn&oacute;stico y plan</h4>
+    <div class="mb-3">
+      <label class="fw-semibold text-uppercase small text-muted" for="diagnostico">Diagn&oacute;stico</label>
+      <textarea id="diagnostico" class="line-area" rows="3" name="diagnostico"></textarea>
+    </div>
+    <div class="mb-3">
+      <label class="fw-semibold text-uppercase small text-muted" for="tratamiento">Tratamiento</label>
+      <textarea id="tratamiento" class="line-area" rows="3" name="tratamiento"></textarea>
+    </div>
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="fw-semibold text-uppercase small text-muted">Presi&oacute;n arterial</label>
+        <div class="d-flex align-items-center gap-3">
+          <div>
+            <small class="text-muted d-block">Sist&oacute;lica</small>
+            <input type="text" class="line-input js-bio-field" data-group="parametros" name="presion_sistolica" id="presion_sistolica">
+          </div>
+          <div>
+            <small class="text-muted d-block">Diast&oacute;lica</small>
+            <input type="text" class="line-input js-bio-field" data-group="parametros" name="presion_diastolica" id="presion_diastolica">
+          </div>
+        </div>
+      </div>
+      <div class="col-md-8">
+        <label class="fw-semibold text-uppercase small text-muted d-block">Par&aacute;metros</label>
+        <div class="row g-2">
+          <div class="col-sm-4">
+            <small class="text-muted">Saturaci&oacute;n de O<sub>2</sub></small>
+            <input type="text" class="line-input js-bio-field" data-group="parametros" name="saturacion_o2" id="saturacion_o2">
+          </div>
+          <div class="col-sm-4">
+            <small class="text-muted">Glucosa</small>
+            <input type="text" class="line-input js-bio-field" data-group="parametros" name="glucosa" id="glucosa">
+          </div>
+          <div class="col-sm-4">
+            <small class="text-muted">Triglic&eacute;ridos</small>
+            <input type="text" class="line-input js-bio-field" data-group="parametros" name="trigliceridos" id="trigliceridos">
+          </div>
+          <div class="col-sm-4">
+            <small class="text-muted">TTP</small>
+            <input type="text" class="line-input js-bio-field" data-group="parametros" name="ttp" id="ttp">
+          </div>
+          <div class="col-sm-4">
+            <small class="text-muted">ATP</small>
+            <input type="text" class="line-input js-bio-field" data-group="parametros" name="atp" id="atp">
+          </div>
+          <div class="col-sm-4">
+            <small class="text-muted">Colesterol</small>
+            <input type="text" class="line-input js-bio-field" data-group="parametros" name="colesterol" id="colesterol">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <div class="bio-section">
+      <div class="signature-box">
+        <div class="flex-grow-1 signature-line">
+          Firma responsable
+        </div>
+        <div class="flex-grow-1 signature-line">
+          Firma
+        </div>
+      </div>
+    </div>
+
+    <div class="bio-section">
+      <div class="d-flex justify-content-between flex-wrap gap-2">
+        <div>
+          <a href="{% url 'medical:dashboard_medico' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Volver al dashboard
+          </a>
+          <a id="btnHistorial" href="{% url 'medical:consultas' %}" class="btn btn-outline-info ms-2">
+            <i class="fas fa-list me-2"></i>Historial
+          </a>
+        </div>
+        <div>
+          <button type="button" class="btn btn-outline-primary" onclick="window.print()">
+            <i class="fas fa-print me-2"></i>Imprimir
+          </button>
+          <button type="submit" class="btn btn-success ms-2" id="btnGuardar">
+            <i class="fas fa-save me-2"></i>Guardar examen
+          </button>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <!-- Modal de confirmación -->
+  <div class="modal fade" id="bioGuardadoModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="fas fa-check-circle text-success me-2"></i>Examen guardado</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          La biomicroscop&iacute;a se registr&oacute; correctamente.
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Seguir aqu&iacute;</button>
+          <a href="#" class="btn btn-primary" id="bioHistorialBtn">
+            <i class="fas fa-list me-2"></i>Ver historial de consultas
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let tomSelectPac;
+let pacientesMap = new Map();
+let pacienteSeleccionadoId = null;
+// Rutas Django (evita hardcodear paths)
+const URL_PACIENTES = "{% url 'medical:api_pacientes_medicos' %}";
+const URL_BIO_SAVE = "{% url 'medical:api_biomicroscopia_save' %}";
+// Usamos un placeholder 0 y lo reemplazamos por el ficha_id real
+const URL_BIO_DETAIL_BASE = "{% url 'medical:api_biomicroscopia_detail' ficha_id=0 %}";
+
+document.addEventListener('DOMContentLoaded', async () => {
+  setFechaActual();
+  await cargarPacientesMedicos();
+  await prefillPorQuery();
+  await cargarExamenExistente();
+  await actualizarVinculosHistorial();
+});
+
+function getFichaId() {
+  const raw = document.getElementById('fichaIdHidden')?.value || '';
+  if (!raw) return null;
+  const parsed = parseInt(raw, 10);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function setFechaActual() {
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  const value = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  const input = document.getElementById('fechaExamen');
+  if (input) input.value = value;
+}
+
+async function cargarPacientesMedicos() {
+  try {
+    const res = await fetch(URL_PACIENTES, { credentials: 'same-origin' });
+    if (!res.ok) throw new Error('No fue posible cargar pacientes');
+    const json = await res.json().catch(() => ({}));
+    const lista = json?.data ?? json ?? [];
+
+    const options = lista.map((p) => {
+      const id = String(p.paciente_medico_id ?? p.id ?? '');
+      const c = p.cliente || p.Cliente || {};
+      const doc = c.rut || c.cedula || c.ci || p.rut || p.cedula || '';
+      const nombre = [c.nombres || p.nombres || '', c.ap_pat || p.ap_pat || '', c.ap_mat || p.ap_mat || '']
+        .filter(Boolean)
+        .join(' ')
+        .trim();
+      pacientesMap.set(id, { ...p, _doc: doc, _nombre: nombre, _cliente_id: c.cliente_id ?? null });
+      return { value: id, text: `${nombre || 'Sin nombre'} - ${doc || 'Sin documento'}`, doc, nombre };
+    });
+
+    const input = document.getElementById('pacienteMedicoId');
+    tomSelectPac = new TomSelect(input, {
+      create: false,
+      options,
+      searchField: ['text', 'doc', 'nombre'],
+      sortField: { field: 'text', direction: 'asc' },
+      placeholder: 'Escribe para buscar…',
+      onChange: handleSeleccionPaciente,
+    });
+  } catch (error) {
+    console.error(error);
+    alerta('No fue posible preparar la b&uacute;squeda de pacientes', 'danger');
+  }
+}
+
+function handleSeleccionPaciente(value) {
+  pacienteSeleccionadoId = value || null;
+  const info = pacientesMap.get(String(value)) || null;
+  document.getElementById('pacienteDoc').value = info?._doc || '';
+  document.getElementById('pacienteNombre').value = info?._nombre || '';
+  actualizarVinculosHistorial();
+}
+
+async function prefillPorQuery() {
+  const params = new URLSearchParams(window.location.search);
+  const qPacienteId = params.get('paciente_id') || params.get('paciente_medico_id');
+  if (qPacienteId && tomSelectPac) {
+    tomSelectPac.setValue(String(qPacienteId), true);
+    tomSelectPac.disable();
+    handleSeleccionPaciente(String(qPacienteId));
+  }
+}
+
+async function resolverHistorialUrl(pacienteId) {
+  if (!pacienteId) return '{% url 'medical:consultas' %}';
+  const id = encodeURIComponent(pacienteId);
+  const candidatos = [
+    `/pacientes/${id}/historial`,
+    `/pacientes-medicos/${id}/historial`,
+    `/historial-paciente/${id}`,
+    `/consultas?paciente_id=${id}`,
+    `/consultas-nuevo?paciente_id=${id}`,
+  ];
+  for (const url of candidatos) {
+    try {
+      const r = await fetch(url, { method: 'GET', credentials: 'same-origin' });
+      if (r.ok) return url;
+    } catch (_err) {
+      /* noop */
+    }
+  }
+  return '{% url 'medical:consultas' %}';
+}
+
+async function actualizarVinculosHistorial() {
+  const href = await resolverHistorialUrl(pacienteSeleccionadoId);
+  const btn = document.getElementById('btnHistorial');
+  if (btn) btn.href = href;
+}
+
+function rellenarGrupo(data, allowed = []) {
+  if (!data) return;
+  const keys = allowed.length ? allowed : Object.keys(data);
+  for (const key of keys) {
+    if (!(key in data)) continue;
+    const el = document.querySelector(`[name="${key}"]`);
+    if (el) el.value = data[key] ?? '';
+  }
+}
+
+async function cargarExamenExistente() {
+  const fichaId = getFichaId();
+  if (!fichaId) return;
+  try {
+    const detalleUrl = URL_BIO_DETAIL_BASE.replace(/0\/?$/, `${fichaId}/`);
+    const res = await fetch(detalleUrl, { credentials: 'same-origin' });
+    if (!res.ok) return;
+    const json = await res.json().catch(() => ({}));
+    const data = json?.data;
+    if (!data) return;
+    rellenarGrupo(data.biomicroscopia);
+    rellenarGrupo(data.reflejos);
+    rellenarGrupo(data.fondo_ojo);
+    rellenarGrupo(data.parametros);
+    if (data.diagnostico && data.diagnostico.diagnostico_principal !== undefined) {
+      document.getElementById('diagnostico').value = data.diagnostico.diagnostico_principal || '';
+    }
+    if (data.tratamiento && data.tratamiento.medicamentos !== undefined) {
+      document.getElementById('tratamiento').value = data.tratamiento.medicamentos || '';
+    }
+  } catch (error) {
+    console.warn('No se pudo cargar el examen existente', error);
+  }
+}
+
+function gatherGroup(groupName) {
+  const inputs = document.querySelectorAll(`.js-bio-field[data-group="${groupName}"]`);
+  const data = {};
+  inputs.forEach((el) => {
+    const key = el.name;
+    if (!key) return;
+    const value = el.value;
+    data[key] = value && value.trim() !== '' ? value.trim() : null;
+  });
+  return data;
+}
+
+function alerta(mensaje, tipo = 'info') {
+  const html = `
+    <div class="alert alert-${tipo} alert-dismissible fade show mt-2" role="alert">
+      ${mensaje}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>`;
+  const container = document.querySelector('.container');
+  container.insertAdjacentHTML('afterbegin', html);
+  setTimeout(() => {
+    const alertNode = container.querySelector('.alert');
+    if (alertNode) alertNode.remove();
+  }, 6000);
+}
+
+document.getElementById('biomicroscopiaForm').addEventListener('submit', async (event) => {
+  event.preventDefault();
+
+  const fichaId = getFichaId();
+  if (!fichaId) {
+    alerta('No hay ficha asociada para guardar el examen.', 'danger');
+    return;
+  }
+  if (!pacienteSeleccionadoId) {
+    alerta('Selecciona un paciente antes de guardar.', 'danger');
+    return;
+  }
+
+  const submitBtn = document.getElementById('btnGuardar');
+  submitBtn.disabled = true;
+
+  const payload = {
+    ficha_id: fichaId,
+    paciente_medico_id: parseInt(pacienteSeleccionadoId, 10),
+    biomicroscopia: gatherGroup('biomicroscopia'),
+    reflejos: gatherGroup('reflejos'),
+    fondo_ojo: gatherGroup('fondo'),
+    parametros: gatherGroup('parametros'),
+    diagnostico: (() => {
+      const val = document.getElementById('diagnostico')?.value || '';
+      return val.trim() || null;
+    })(),
+    tratamiento: (() => {
+      const val = document.getElementById('tratamiento')?.value || '';
+      return val.trim() || null;
+    })(),
+  };
+
+  try {
+    const res = await fetch(URL_BIO_SAVE, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify(payload),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok || body.success === false) {
+      throw new Error(body.message || 'No se pudo guardar el examen');
+    }
+    await cargarExamenExistente();
+    const historialHref = await resolverHistorialUrl(pacienteSeleccionadoId);
+    mostrarModalExito(historialHref);
+  } catch (error) {
+    console.error(error);
+    alerta(error.message || 'Error inesperado al guardar', 'danger');
+  } finally {
+    submitBtn.disabled = false;
+  }
+});
+
+function mostrarModalExito(href) {
+  const modalEl = document.getElementById('bioGuardadoModal');
+  if (!modalEl) return;
+  const historialBtn = document.getElementById('bioHistorialBtn');
+  if (historialBtn) {
+    historialBtn.href = href || '{% url 'medical:consultas' %}';
+  }
+  const modal = window.bootstrap ? new window.bootstrap.Modal(modalEl) : null;
+  if (modal) modal.show();
+}
+</script>
+{% endblock %}
+

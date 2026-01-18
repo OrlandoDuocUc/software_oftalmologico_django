@@ -1,0 +1,583 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Consulta - Oftalmetryc{% endblock %}
+
+{% block extra_css %}
+/* ESTILOS ESPECÍFICOS DE EDITAR CONSULTA */
+        .page-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .form-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .section-title {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        
+        .patient-info {
+            background: linear-gradient(45deg, #f8f9fa, #ffffff);
+            border: 2px solid var(--primary-color);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .eye-section {
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+        
+        .eye-section.od {
+            border-color: #007bff;
+            background: linear-gradient(45deg, #f0f8ff, #ffffff);
+        }
+        
+        .eye-section.oi {
+            border-color: #28a745;
+            background: linear-gradient(45deg, #f0fff0, #ffffff);
+        }
+        
+        .btn-group-custom {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-top: 20px;
+        }
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <!-- HEADER DE LA PÁGINA -->
+    <div class="page-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1><i class="fas fa-edit me-3"></i>Editar Consulta - editar_consulta.html</h1>
+                <p class="mb-0" id="consultaSubtitle">Modificar información de la ficha clínica</p>
+            </div>
+            <div>
+                <button class="btn btn-light btn-lg me-2" onclick="volverDetalle()">
+                    <i class="fas fa-arrow-left me-2"></i>Volver
+                </button>
+                <button class="btn btn-outline-light btn-lg" onclick="verDetalle()" id="btnDetalle">
+                    <i class="fas fa-eye me-2"></i>Ver Detalle
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- INFORMACIÓN DEL PACIENTE -->
+    <div class="patient-info" id="patientInfo">
+        <div class="row align-items-center">
+            <div class="col-auto">
+                <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center" 
+                     style="width: 60px; height: 60px;">
+                    <i class="fas fa-user fa-2x text-white"></i>
+                </div>
+            </div>
+            <div class="col">
+                <h5 class="mb-1" id="patientName">Cargando información del paciente...</h5>
+                <p class="text-muted mb-0">
+                    <i class="fas fa-file-medical me-1"></i>Ficha: <span id="numeroFicha">-</span> | 
+                    <i class="fas fa-calendar me-1"></i>Fecha: <span id="fechaConsulta">-</span>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- FORMULARIO DE EDICIÓN -->
+    <form id="editarConsultaForm">
+        <!-- INFORMACIÓN BÁSICA -->
+        <div class="form-section">
+            <h4 class="section-title">
+                <i class="fas fa-info-circle me-2"></i>Información Básica
+            </h4>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group mb-3">
+                        <label for="numero_consulta" class="form-label">Número de Consulta</label>
+                        <input type="text" class="form-control" id="numero_consulta" name="numero_consulta" readonly>
+                        <small class="form-text text-muted">Este número se genera automáticamente</small>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group mb-3">
+                        <label for="estado" class="form-label">Estado de la Consulta</label>
+                        <select class="form-select" id="estado" name="estado">
+                            <option value="En Proceso">En Proceso</option>
+                            <option value="Completada">Completada</option>
+                            <option value="Pendiente">Pendiente</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group mb-3">
+                <label for="motivo_consulta" class="form-label">Motivo de Consulta <span class="text-danger">*</span></label>
+                <textarea class="form-control" id="motivo_consulta" name="motivo_consulta" rows="3" 
+                         placeholder="Describir el motivo de la consulta..." required></textarea>
+            </div>
+            
+            <div class="form-group mb-3">
+                <label for="historia_actual" class="form-label">Historia Actual</label>
+                <textarea class="form-control" id="historia_actual" name="historia_actual" rows="4" 
+                         placeholder="Describir la historia actual del paciente..."></textarea>
+            </div>
+        </div>
+
+        <!-- AGUDEZA VISUAL -->
+        <div class="form-section">
+            <h4 class="section-title">
+                <i class="fas fa-search me-2"></i>Agudeza Visual
+            </h4>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="eye-section od">
+                        <h6 class="text-primary mb-3"><i class="fas fa-eye me-2"></i>Ojo Derecho (OD)</h6>
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="form-group mb-3">
+                                    <label for="av_od_sc" class="form-label">Sin Corrección</label>
+                                    <input type="text" class="form-control" id="av_od_sc" name="av_od_sc" placeholder="20/20">
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-group mb-3">
+                                    <label for="av_od_cc" class="form-label">Con Corrección</label>
+                                    <input type="text" class="form-control" id="av_od_cc" name="av_od_cc" placeholder="20/20">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="form-group mb-3">
+                                    <label for="av_od_ph" class="form-label">Pinhole</label>
+                                    <input type="text" class="form-control" id="av_od_ph" name="av_od_ph" placeholder="20/20">
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-group mb-3">
+                                    <label for="av_od_cerca" class="form-label">Cerca</label>
+                                    <input type="text" class="form-control" id="av_od_cerca" name="av_od_cerca" placeholder="J1">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="eye-section oi">
+                        <h6 class="text-success mb-3"><i class="fas fa-eye me-2"></i>Ojo Izquierdo (OI)</h6>
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="form-group mb-3">
+                                    <label for="av_oi_sc" class="form-label">Sin Corrección</label>
+                                    <input type="text" class="form-control" id="av_oi_sc" name="av_oi_sc" placeholder="20/20">
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-group mb-3">
+                                    <label for="av_oi_cc" class="form-label">Con Corrección</label>
+                                    <input type="text" class="form-control" id="av_oi_cc" name="av_oi_cc" placeholder="20/20">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="form-group mb-3">
+                                    <label for="av_oi_ph" class="form-label">Pinhole</label>
+                                    <input type="text" class="form-control" id="av_oi_ph" name="av_oi_ph" placeholder="20/20">
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-group mb-3">
+                                    <label for="av_oi_cerca" class="form-label">Cerca</label>
+                                    <input type="text" class="form-control" id="av_oi_cerca" name="av_oi_cerca" placeholder="J1">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- REFRACCIÓN -->
+        <div class="form-section">
+            <h4 class="section-title">
+                <i class="fas fa-glasses me-2"></i>Refracción
+            </h4>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="eye-section od">
+                        <h6 class="text-primary mb-3"><i class="fas fa-eye me-2"></i>Ojo Derecho (OD)</h6>
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="form-group mb-3">
+                                    <label for="esfera_od" class="form-label">Esfera</label>
+                                    <input type="text" class="form-control" id="esfera_od" name="esfera_od" placeholder="+2.00">
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-group mb-3">
+                                    <label for="cilindro_od" class="form-label">Cilindro</label>
+                                    <input type="text" class="form-control" id="cilindro_od" name="cilindro_od" placeholder="-0.50">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="form-group mb-3">
+                                    <label for="eje_od" class="form-label">Eje</label>
+                                    <input type="text" class="form-control" id="eje_od" name="eje_od" placeholder="90°">
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-group mb-3">
+                                    <label for="adicion_od" class="form-label">Adición</label>
+                                    <input type="text" class="form-control" id="adicion_od" name="adicion_od" placeholder="+1.50">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="eye-section oi">
+                        <h6 class="text-success mb-3"><i class="fas fa-eye me-2"></i>Ojo Izquierdo (OI)</h6>
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="form-group mb-3">
+                                    <label for="esfera_oi" class="form-label">Esfera</label>
+                                    <input type="text" class="form-control" id="esfera_oi" name="esfera_oi" placeholder="+2.00">
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-group mb-3">
+                                    <label for="cilindro_oi" class="form-label">Cilindro</label>
+                                    <input type="text" class="form-control" id="cilindro_oi" name="cilindro_oi" placeholder="-0.50">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="form-group mb-3">
+                                    <label for="eje_oi" class="form-label">Eje</label>
+                                    <input type="text" class="form-control" id="eje_oi" name="eje_oi" placeholder="90°">
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-group mb-3">
+                                    <label for="adicion_oi" class="form-label">Adición</label>
+                                    <input type="text" class="form-control" id="adicion_oi" name="adicion_oi" placeholder="+1.50">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- INFORMACIÓN ADICIONAL -->
+        <div class="form-section">
+            <h4 class="section-title">
+                <i class="fas fa-plus-circle me-2"></i>Información Adicional
+            </h4>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group mb-3">
+                        <label for="distancia_pupilar" class="form-label">Distancia Pupilar</label>
+                        <input type="text" class="form-control" id="distancia_pupilar" name="distancia_pupilar" placeholder="62 mm">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group mb-3">
+                        <label for="tipo_lente" class="form-label">Tipo de Lente</label>
+                        <select class="form-select" id="tipo_lente" name="tipo_lente">
+                            <option value="">Seleccionar tipo</option>
+                            <option value="Monofocal">Monofocal</option>
+                            <option value="Bifocal">Bifocal</option>
+                            <option value="Progresivo">Progresivo</option>
+                            <option value="Ocupacional">Ocupacional</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- BOTONES DE ACCIÓN -->
+        <div class="btn-group-custom">
+            <div class="d-flex justify-content-between">
+                <div>
+                    <button type="button" class="btn btn-secondary me-2" onclick="cancelarEdicion()">
+                        <i class="fas fa-times me-2"></i>Cancelar
+                    </button>
+                    <button type="button" class="btn btn-outline-primary" onclick="resetearFormulario()">
+                        <i class="fas fa-undo me-2"></i>Restaurar
+                    </button>
+                </div>
+                <div>
+                    <button type="submit" class="btn btn-primary" id="btnGuardar">
+                        <i class="fas fa-save me-2"></i>Guardar Cambios
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <!-- MENSAJE DE CARGA -->
+    <div class="form-section" id="loadingSection">
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="text-muted mt-3">Cargando información de la consulta...</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Variables globales
+    const consultaIdFromServer = {{ consulta_id|tojson }};
+    const consultaId = consultaIdFromServer ?? (window.location.pathname.split('/')[2] || null);
+    let consultaOriginal = {};
+
+    const API_GET_FICHA = (id) => "{% url 'medical:api_ficha_clinica_by_id' ficha_id=0 %}".replace('/0', '/' + id);
+    const API_UPDATE_FICHA = (id) => "{% url 'medical:api_ficha_clinica_by_id' ficha_id=0 %}".replace('/0', '/' + id);
+    const URL_DETALLE_CONSULTA = (id) => "{% url 'medical:ver_consulta' consulta_id=0 %}".replace('/0', '/' + id);
+    const URL_LISTA_CONSULTAS = "{% url 'medical:consultas' %}";
+
+    // Cargar información al iniciar
+    document.addEventListener('DOMContentLoaded', () => {
+        if (consultaId) {
+            cargarConsulta();
+        } else {
+            mostrarError('ID de consulta invalido');
+        }
+    });
+
+    // Cargar información de la consulta
+    async function cargarConsulta() {
+        try {
+            const response = await fetch(API_GET_FICHA(consultaId));
+            const data = await response.json();
+            
+            if (data.success && data.data) {
+                consultaOriginal = JSON.parse(JSON.stringify(data.data));
+                poblarFormulario(consultaOriginal);
+                ocultarCarga();
+            } else {
+                mostrarError(data.error || 'Consulta no encontrada');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            mostrarError('Error al cargar la consulta');
+        }
+    }
+
+    // Poblar formulario con datos
+    function poblarFormulario(consulta) {
+        // Información del paciente
+        if (consulta.cliente) {
+            const nombreCompleto = `${consulta.cliente.nombres} ${consulta.cliente.ap_pat || ''} ${consulta.cliente.ap_mat || ''}`;
+            document.getElementById('patientName').textContent = nombreCompleto;
+            document.getElementById('consultaSubtitle').textContent = `Editar consulta de ${consulta.cliente.nombres}`;
+        }
+        
+        document.getElementById('numeroFicha').textContent = consulta.paciente_medico?.numero_ficha || 'N/A';
+        document.getElementById('fechaConsulta').textContent = 
+            new Date(consulta.fecha_consulta).toLocaleDateString();
+        
+        // Campos básicos
+        document.getElementById('numero_consulta').value = consulta.numero_consulta || '';
+
+        const estadoSelect = document.getElementById('estado');
+        if (consulta.estado) {
+            const estadoValor = consulta.estado.toString().toLowerCase();
+            if (estadoValor === 'en_proceso') {
+                estadoSelect.value = 'En Proceso';
+            } else if (estadoValor === 'completada') {
+                estadoSelect.value = 'Completada';
+            } else if (estadoValor === 'pendiente') {
+                estadoSelect.value = 'Pendiente';
+            } else {
+                estadoSelect.value = consulta.estado;
+            }
+        } else {
+            estadoSelect.value = 'En Proceso';
+        }
+
+        document.getElementById('motivo_consulta').value = consulta.motivo_consulta || '';
+        document.getElementById('historia_actual').value = consulta.historia_actual || '';
+        
+        // Agudeza Visual - OD
+        document.getElementById('av_od_sc').value = consulta.av_od_sc || '';
+        document.getElementById('av_od_cc').value = consulta.av_od_cc || '';
+        document.getElementById('av_od_ph').value = consulta.av_od_ph || '';
+        document.getElementById('av_od_cerca').value = consulta.av_od_cerca || '';
+        
+        // Agudeza Visual - OI
+        document.getElementById('av_oi_sc').value = consulta.av_oi_sc || '';
+        document.getElementById('av_oi_cc').value = consulta.av_oi_cc || '';
+        document.getElementById('av_oi_ph').value = consulta.av_oi_ph || '';
+        document.getElementById('av_oi_cerca').value = consulta.av_oi_cerca || '';
+        
+        // Refracción - OD
+        document.getElementById('esfera_od').value = consulta.esfera_od || '';
+        document.getElementById('cilindro_od').value = consulta.cilindro_od || '';
+        document.getElementById('eje_od').value = consulta.eje_od || '';
+        document.getElementById('adicion_od').value = consulta.adicion_od || '';
+        
+        // Refracción - OI
+        document.getElementById('esfera_oi').value = consulta.esfera_oi || '';
+        document.getElementById('cilindro_oi').value = consulta.cilindro_oi || '';
+        document.getElementById('eje_oi').value = consulta.eje_oi || '';
+        document.getElementById('adicion_oi').value = consulta.adicion_oi || '';
+        
+        // Información adicional
+        document.getElementById('distancia_pupilar').value = consulta.distancia_pupilar || '';
+        document.getElementById('tipo_lente').value = consulta.tipo_lente || '';
+    }
+
+    // Manejar envío del formulario
+    document.getElementById('editarConsultaForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const data = Object.fromEntries(formData);
+        
+        await guardarCambios(data);
+    });
+
+    // Guardar cambios
+    async function guardarCambios(data) {
+        const btnGuardar = document.getElementById('btnGuardar');
+        btnGuardar.disabled = true;
+        btnGuardar.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Guardando...';
+        
+        try {
+            const response = await fetch(API_UPDATE_FICHA(consultaId), {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                Swal.fire({
+                    title: 'Listo',
+                    text: 'Consulta actualizada correctamente',
+                    icon: 'success',
+                    confirmButtonText: 'Continuar'
+                }).then(() => {
+                    const destino = consultaId ? URL_DETALLE_CONSULTA(consultaId) : URL_LISTA_CONSULTAS;
+                    window.location.href = destino;
+                });
+            } else {
+                throw new Error(result.message || result.error || 'Error al actualizar');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            Swal.fire({
+                title: 'Error',
+                text: 'No se pudieron guardar los cambios: ' + error.message,
+                icon: 'error',
+                confirmButtonText: 'Entendido'
+            });
+        } finally {
+            btnGuardar.disabled = false;
+            btnGuardar.innerHTML = '<i class="fas fa-save me-2"></i>Guardar Cambios';
+        }
+    }
+
+    // Funciones de navegación y utilidad
+    function volverDetalle() {
+        if (consultaId) {
+            window.location.href = URL_DETALLE_CONSULTA(consultaId);
+        } else {
+            window.location.href = URL_LISTA_CONSULTAS;
+        }
+    }
+
+    function verDetalle() {
+        volverDetalle();
+    }
+
+    function cancelarEdicion() {
+        Swal.fire({
+            title: 'Cancelar edicion?',
+            text: 'Se perderan los cambios no guardados',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Si, cancelar',
+            cancelButtonText: 'Seguir editando'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                volverDetalle();
+            }
+        });
+    }
+
+
+    function resetearFormulario() {
+        Swal.fire({
+            title: 'Restaurar valores originales?',
+            text: 'Se restauraran todos los campos a su valor original',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Si, restaurar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                poblarFormulario(consultaOriginal);
+                Swal.fire('Restaurado', 'Formulario restaurado a valores originales', 'success');
+            }
+        });
+    }
+
+    function ocultarCarga() {
+        document.getElementById('loadingSection').classList.add('d-none');
+    }
+
+    function mostrarError(mensaje) {
+        Swal.fire({
+            title: 'Error',
+            text: mensaje,
+            icon: 'error',
+            confirmButtonText: 'Entendido'
+        }).then(() => {
+            window.location.href = URL_LISTA_CONSULTAS;
+        });
+    }
+
+    // Incluir SweetAlert2
+    if (!document.querySelector('script[src*="sweetalert2"]')) {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+        document.head.appendChild(script);
+    }
+</script>
+{% endblock %}
+
+

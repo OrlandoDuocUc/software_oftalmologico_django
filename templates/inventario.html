@@ -1,0 +1,361 @@
+{% extends "base.html" %}
+
+{% block title %}Inventario - Oftalmetryc{% endblock %}
+
+{% block extra_css %}
+.card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    margin-bottom: 2rem;
+    overflow: hidden;
+}
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+.stat-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+}
+.stat-card:hover {
+    transform: translateY(-2px);
+}
+.stat-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
+.stat-value {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+.stock-low { color: #e74c3c; font-weight: bold; }
+.stock-medium { color: #f39c12; font-weight: bold; }
+.stock-high { color: #27ae60; font-weight: bold; }
+.filter-section {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+.table td {
+    vertical-align: middle;
+}
+.table-header-custom {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+}
+.table-header-custom th {
+    border-color: transparent !important;
+}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <h1>
+                <i class="fas fa-boxes text-primary me-3"></i>Gestión de Inventario
+            </h1>
+            <button class="btn btn-success" onclick="descargarExcel()" type="button">
+                <i class="fas fa-file-excel me-2"></i>Descargar Reporte Excel
+            </button>
+        </div>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon text-primary"><i class="fas fa-boxes"></i></div>
+            <div class="stat-value text-primary">{{ stats.total_productos }}</div>
+            <div class="text-muted">Productos Totales</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon text-success"><i class="fas fa-warehouse"></i></div>
+            <div class="stat-value text-success">{{ stats.total_stock }}</div>
+            <div class="text-muted">Unidades en Stock</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon text-warning"><i class="fas fa-exclamation-triangle"></i></div>
+            <div class="stat-value text-warning">{{ stats.stock_bajo }}</div>
+            <div class="text-muted">Stock Bajo (&lt;10)</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon text-info"><i class="fas fa-tags"></i></div>
+            <div class="stat-value text-info">{{ stats.categorias }}</div>
+            <div class="text-muted">Tipos de Armazón</div>
+        </div>
+    </div>
+
+    <div class="filter-section">
+        <h5 class="mb-3"><i class="fas fa-filter me-2"></i>Filtros</h5>
+        <div class="row">
+            <div class="col-md-3">
+                <select class="form-select" id="filterMarca">
+                    <option value="">Todas las marcas</option>
+                    {% for marca in marcas %}
+                    <option value="{{ marca }}">{{ marca }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" id="filterCantidad">
+                    <option value="">Toda la cantidad</option>
+                    <option value="bajo">Cantidad baja (&lt;10)</option>
+                    <option value="medio">Cantidad media (10-50)</option>
+                    <option value="alto">Cantidad alta (&gt;50)</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <input type="text" class="form-control" id="searchProduct" placeholder="Buscar por código, nombre, distribuidor o marca...">
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-outline-secondary w-100" type="button" onclick="resetFilters()">
+                    <i class="fas fa-undo me-1"></i>Limpiar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="inventoryTable">
+                    <thead class="table-header-custom">
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Nombre</th>
+                            <th>Distribuidor</th>
+                            <th>Marca</th>
+                            <th>Material</th>
+                            <th>Tipo Armazón</th>
+                            <th>Código</th>
+                            <th>Diámetro 1</th>
+                            <th>Diámetro 2</th>
+                            <th>Color</th>
+                            <th>Cantidad</th>
+                            <th>Costo Unit.</th>
+                            <th>Costo Unit. + IVA</th>
+                            <th>Costo Total</th>
+                            <th>Venta 1</th>
+                            <th>Venta 2</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for producto in productos %}
+                        <tr data-marca="{{ producto.marca|default_if_none:''|lower }}" data-cantidad="{{ producto.cantidad|default:0 }}"
+                            data-nombre="{{ producto.nombre|default_if_none:''|lower }}"
+                            data-distribuidor="{{ producto.distribuidor|default_if_none:''|lower }}"
+                            data-codigo="{{ producto.codigo|default_if_none:''|lower }}"
+                            data-material="{{ producto.material|default_if_none:''|lower }}"
+                            data-tipo="{{ producto.tipo_armazon|default_if_none:''|lower }}"
+                            data-color="{{ producto.color|default_if_none:''|lower }}"
+                            data-d1="{{ producto.diametro_1|default_if_none:''|lower }}"
+                            data-d2="{{ producto.diametro_2|default_if_none:''|lower }}"
+                            data-descripcion="{{ producto.descripcion|default_if_none:''|lower }}">
+                            <td>{{ producto.fecha|date:"d/m/Y"|default:"N/A" }}</td>
+                            <td><strong>{{ producto.nombre }}</strong></td>
+                            <td>{{ producto.distribuidor|default:"N/A" }}</td>
+                            <td>{{ producto.marca|default:"N/A" }}</td>
+                            <td>{{ producto.material|default:"N/A" }}</td>
+                            <td>{{ producto.tipo_armazon|default:"N/A" }}</td>
+                            <td><code>{{ producto.codigo|default:"N/A" }}</code></td>
+                            <td>{{ producto.diametro_1|default:"N/A" }}</td>
+                            <td>{{ producto.diametro_2|default:"N/A" }}</td>
+                            <td>{{ producto.color|default:"N/A" }}</td>
+                            <td>
+                                {% if producto.cantidad < 10 %}
+                                <span class="stock-low">{{ producto.cantidad|default:0 }}</span>
+                                {% elif producto.cantidad < 50 %}
+                                <span class="stock-medium">{{ producto.cantidad|default:0 }}</span>
+                                {% else %}
+                                <span class="stock-high">{{ producto.cantidad|default:0 }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ producto.costo_unitario|default:0|currency }}</td>
+                            <td>{{ producto.precio_iva|default_if_none:producto.costo_unitario|currency }}</td>
+                            <td>{{ producto.costo_total|default:0|currency }}</td>
+                            <td>{{ producto.costo_venta_1|default:0|currency }}</td>
+                            <td>{{ producto.costo_venta_2|default:0|currency }}</td>
+                            <td>
+                                {% if producto.estado %}
+                                <span class="badge bg-success">Activo</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Inactivo</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <button class="btn btn-outline-info btn-sm" onclick="verDetalleInventario(this)" title="Ver Detalles"
+                                    data-nombre="{{ producto.nombre }}"
+                                    data-distribuidor="{{ producto.distribuidor|default_if_none:'' }}"
+                                    data-marca="{{ producto.marca|default_if_none:'' }}"
+                                    data-material="{{ producto.material|default_if_none:'' }}"
+                                    data-tipo-armazon="{{ producto.tipo_armazon|default_if_none:'' }}"
+                                    data-codigo="{{ producto.codigo|default_if_none:'' }}"
+                                    data-diametro1="{{ producto.diametro_1|default_if_none:'' }}"
+                                    data-diametro2="{{ producto.diametro_2|default_if_none:'' }}"
+                                    data-color="{{ producto.color|default_if_none:'' }}"
+                                    data-cantidad="{{ producto.cantidad|default:0 }}"
+                                    data-costo-unitario="{{ producto.costo_unitario|default:0 }}"
+                                    data-precio-iva="{{ producto.precio_iva|default_if_none:producto.costo_unitario|default:0 }}"
+                                    data-costo-total="{{ producto.costo_total|default:0 }}"
+                                    data-costo-venta1="{{ producto.costo_venta_1|default:0 }}"
+                                    data-costo-venta2="{{ producto.costo_venta_2|default:0 }}"
+                                    data-descripcion="{{ producto.descripcion|default_if_none:'' }}">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    const filterMarca = document.getElementById('filterMarca');
+    const filterCantidad = document.getElementById('filterCantidad');
+    const searchProduct = document.getElementById('searchProduct');
+
+    [filterMarca, filterCantidad, searchProduct].forEach(el => {
+        if (el) {
+            el.addEventListener('input', filterTable);
+            el.addEventListener('change', filterTable);
+        }
+    });
+
+    function filterTable() {
+        const marca = (filterMarca.value || '').toLowerCase();
+        const cantidadFilter = filterCantidad.value;
+        const search = (searchProduct.value || '').toLowerCase();
+        const rows = document.querySelectorAll('#inventoryTable tbody tr');
+
+        rows.forEach(row => {
+            const rowMarca = row.dataset.marca;
+            const cantidad = parseInt(row.dataset.cantidad || '0', 10);
+            const nombre = row.dataset.nombre;
+            const distribuidor = row.dataset.distribuidor;
+            const codigo = row.dataset.codigo;
+            const material = row.dataset.material || '';
+            const tipo = row.dataset.tipo || '';
+            const color = row.dataset.color || '';
+            const d1 = row.dataset.d1 || '';
+            const d2 = row.dataset.d2 || '';
+            const descripcion = row.dataset.descripcion || '';
+
+            let matchesMarca = !marca || rowMarca.includes(marca);
+            let matchesCantidad = true;
+            if (cantidadFilter === 'bajo') matchesCantidad = cantidad < 10;
+            else if (cantidadFilter === 'medio') matchesCantidad = cantidad >= 10 && cantidad <= 50;
+            else if (cantidadFilter === 'alto') matchesCantidad = cantidad > 50;
+
+            const matchesSearch =
+                !search ||
+                nombre.includes(search) ||
+                distribuidor.includes(search) ||
+                codigo.includes(search) ||
+                rowMarca.includes(search) ||
+                material.includes(search) ||
+                tipo.includes(search) ||
+                color.includes(search) ||
+                d1.includes(search) ||
+                d2.includes(search) ||
+                descripcion.includes(search);
+
+            row.style.display = matchesMarca && matchesCantidad && matchesSearch ? '' : 'none';
+        });
+    }
+
+    function resetFilters() {
+        filterMarca.value = '';
+        filterCantidad.value = '';
+        searchProduct.value = '';
+        filterTable();
+    }
+
+    function verDetalleInventario(button) {
+        const data = {
+            nombre: button.getAttribute('data-nombre') || '',
+            distribuidor: button.getAttribute('data-distribuidor') || 'N/A',
+            marca: button.getAttribute('data-marca') || 'N/A',
+            material: button.getAttribute('data-material') || 'N/A',
+            tipo_armazon: button.getAttribute('data-tipo-armazon') || 'N/A',
+            codigo: button.getAttribute('data-codigo') || 'N/A',
+            diametro_1: button.getAttribute('data-diametro1') || 'N/A',
+            diametro_2: button.getAttribute('data-diametro2') || 'N/A',
+            color: button.getAttribute('data-color') || 'N/A',
+            cantidad: button.getAttribute('data-cantidad') || 0,
+            costo_unitario: button.getAttribute('data-costo-unitario') || 0,
+            precio_iva: button.getAttribute('data-precio-iva') || 0,
+            costo_total: button.getAttribute('data-costo-total') || 0,
+            costo_venta_1: button.getAttribute('data-costo-venta1') || 0,
+            costo_venta_2: button.getAttribute('data-costo-venta2') || 0,
+            descripcion: button.getAttribute('data-descripcion') || 'Sin descripción'
+        };
+        Swal.fire({
+            title: data.nombre || 'Producto',
+            html: `
+                <div class="text-start">
+                    <p><strong>Distribuidor:</strong> ${data.distribuidor || 'N/A'}</p>
+                    <p><strong>Marca:</strong> ${data.marca || 'N/A'}</p>
+                    <p><strong>Material:</strong> ${data.material || 'N/A'}</p>
+                    <p><strong>Tipo Armazón:</strong> ${data.tipo_armazon || 'N/A'}</p>
+                    <p><strong>Código:</strong> ${data.codigo || 'N/A'}</p>
+                    <p><strong>Diámetros:</strong> ${data.diametro_1 || 'N/A'} / ${data.diametro_2 || 'N/A'}</p>
+                    <p><strong>Color:</strong> ${data.color || 'N/A'}</p>
+                    <p><strong>Cantidad:</strong> ${data.cantidad}</p>
+                    <p><strong>Costo Unitario:</strong> ${data.costo_unitario}</p>
+                    <p><strong>Costo Unitario + IVA:</strong> ${data.precio_iva}</p>
+                    <p><strong>Costo Total:</strong> ${data.costo_total}</p>
+                    <p><strong>Precios Venta:</strong> ${data.costo_venta_1} / ${data.costo_venta_2}</p>
+                    <p><strong>Descripción:</strong> ${data.descripcion || 'Sin descripción'}</p>
+                </div>
+            `,
+            icon: 'info',
+            showCloseButton: true,
+            width: '600px'
+        });
+    }
+
+    function descargarExcel() {
+        // Llama al endpoint Django que genera el XLSX. Si quisieras,
+        // podrías enviar sólo las filas visibles; el backend exporta todo
+        // el inventario cuando no se envía payload.
+        fetch('/productos/exportar-excel/', {
+            method: 'POST'
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Respuesta no OK');
+            return response.blob();
+        })
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const filename = `inventario_${new Date().toISOString().split('T')[0]}.xlsx`;
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        })
+        .catch(() => {
+            alert('No se pudo generar el reporte. Intenta nuevamente.');
+        });
+    }
+</script>
+{% endblock %}

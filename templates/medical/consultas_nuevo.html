@@ -1,0 +1,352 @@
+{% extends "base.html" %}
+
+{% block title %}Historial de Consultas - Oftalmetryc{% endblock %}
+
+{% block extra_css %}
+/* ESTILOS ESPECÍFICOS */
+.page-header {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    padding: 30px;
+    border-radius: 15px;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+.search-section {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+.consultas-table {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+.consulta-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.consulta-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+}
+.status-badge {
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <!-- HEADER DE LA PÁGINA -->
+    <div class="page-header">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <h1><i class="fas fa-calendar-check me-3"></i>Historial de Consultas</h1>
+                <p class="mb-0">Gestión y seguimiento de consultas médicas oftalmológicas</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECCIÓN DE BÚSQUEDA Y FILTROS -->
+    <div class="search-section">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label for="searchConsulta" class="form-label fw-bold">
+                        <i class="fas fa-search me-2"></i>Buscar Consulta
+                    </label>
+                    <input type="text" class="form-control" id="searchConsulta" placeholder="Buscar por paciente...">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="filterFecha" class="form-label fw-bold">Fecha</label>
+                    <input type="date" class="form-control" id="filterFecha">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="filterEstado" class="form-label fw-bold">Estado</label>
+                    <select class="form-select" id="filterEstado">
+                        <option value="">Todas</option>
+                        <option value="completada">Completadas</option>
+                        <option value="en_proceso">En Proceso</option>
+                        <option value="pendiente">Pendientes</option>
+                        <option value="cancelada">Canceladas</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="form-group">
+                    <label class="form-label fw-bold">Acciones</label>
+                    <div class="d-grid">
+                        <button class="btn btn-primary" onclick="buscarConsultas()">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LISTA DE CONSULTAS -->
+    <div class="consultas-table">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5><i class="fas fa-list me-2"></i>Lista de Consultas</h5>
+            <span class="badge bg-primary" id="totalConsultasCount">0 consultas</span>
+        </div>
+        
+        <div id="consultasList">
+            <!-- Las consultas se cargarán aquí dinámicamente -->
+            <div class="text-center py-5">
+                <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
+                <p class="text-muted mt-3">Cargando consultas...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- BOTÓN VOLVER AL DASHBOARD MÉDICO -->
+    <div class="text-center mt-4">
+        <a href="{% url 'medical:dashboard_medico' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Volver al Dashboard Médico
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // ====== ENDPOINTS CON url_for (no hardcodear rutas) ======
+    const API_LIST_URL = "{% url 'medical:api_fichas_clinicas' %}";
+    // Helpers para armar URLs con ID conservando prefijo/blueprint:
+    const URL_VER_CONSULTA = (id) => "{% url 'medical:ver_consulta' consulta_id=0 %}".replace('/0', '/' + id);
+    const URL_EDITAR_CONSULTA = (id) => "{% url 'medical:editar_consulta' consulta_id=0 %}".replace('/0', '/' + id);
+    const BASE_FICHA_CLINICA = "{% url 'medical:ficha_clinica' %}";
+    const URL_EXAMEN_OPTOMETRIA = (consultaId, pacienteId) => {
+        const params = new URLSearchParams();
+        if (consultaId) params.set('consulta_id', consultaId);
+        if (pacienteId) params.set('paciente_id', pacienteId);
+        return params.toString() ? `${BASE_FICHA_CLINICA}?${params.toString()}` : BASE_FICHA_CLINICA;
+    };
+
+    const URL_EXAMEN_BIOMICROSCOPIA = (consultaId, pacienteId) => {
+        const base = "{% url 'medical:biomicroscopia_nuevo' %}";
+        const params = new URLSearchParams();
+        if (consultaId) params.set('consulta_id', consultaId);
+        if (pacienteId) params.set('paciente_id', pacienteId);
+        const query = params.toString();
+        return query ? `${base}?${query}` : base;
+    };
+
+    let consultasData = [];
+
+    // Cargar consultas al inicializar
+    document.addEventListener('DOMContentLoaded', function() {
+        cargarConsultas();
+    });
+
+    // Función para cargar consultas desde la API
+    async function cargarConsultas() {
+        try {
+            const response = await fetch(API_LIST_URL, { headers: { 'Accept': 'application/json' } });
+            if (!response.ok) {
+                // Muestra el código de estado para depurar rápido
+                return mostrarError(`Error al cargar consultas (HTTP ${response.status})`);
+            }
+
+            const data = await response.json();
+            if (data && data.success) {
+                consultasData = Array.isArray(data.data) ? data.data : [];
+                mostrarConsultas(consultasData);
+                updateConsultasCount(consultasData.length);
+            } else {
+                mostrarError(data.error || 'Respuesta inválida de la API');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            mostrarError('Error de conexión al cargar consultas');
+        }
+    }
+
+    // Función para mostrar consultas en la interfaz
+    function mostrarConsultas(consultas) {
+        const container = document.getElementById('consultasList');
+        
+        if (!Array.isArray(consultas) || consultas.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-5">
+                    <i class="fas fa-calendar-times fa-3x text-muted"></i>
+                    <h5 class="text-muted mt-3">No se encontraron consultas</h5>
+                    <p class="text-muted">Crea la primera consulta haciendo clic en "Nueva Consulta"</p>
+                </div>
+            `;
+            return;
+        }
+
+        const consultasHTML = consultas.map(consulta => {
+            const fecha = consulta.fecha_consulta ? new Date(consulta.fecha_consulta) : null;
+            const fechaConsulta = fecha ? fecha.toLocaleDateString('es-CL') : '-';
+            const horaConsulta = fecha ? fecha.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }) : '-';
+
+            // Nombre del paciente desde el objeto cliente (inyectado por el controller)
+            const nombrePaciente = consulta.cliente
+                ? `${consulta.cliente.nombres || ''} ${consulta.cliente.ap_pat || ''}`.trim() || 'Sin nombre'
+                : 'Sin nombre';
+
+            const nombreMedico = (consulta.usuario && consulta.usuario.nombre) ? consulta.usuario.nombre : 'Sin asignar';
+
+            const estado = (consulta.estado || '').toLowerCase();
+            const estadoTexto = estado === 'en_proceso' ? 'En Proceso'
+                              : estado === 'completada' ? 'Completada'
+                              : estado === 'cancelada' ? 'Cancelada'
+                              : 'Pendiente';
+
+            const estadoClass = estado === 'completada' ? 'bg-success'
+                              : estado === 'en_proceso' ? 'bg-warning'
+                              : estado === 'cancelada' ? 'bg-danger'
+                              : 'bg-secondary';
+
+            const id = consulta.ficha_id;
+            const pacienteMedicoId = consulta.paciente_medico ? consulta.paciente_medico.paciente_medico_id : null;
+            const bio = consulta.biomicroscopia || null;
+            const bioResumen = bio?.resumen || 'Biomicroscopía no registrada';
+            const bioFecha = bio?.fecha_examen ? new Date(bio.fecha_examen).toLocaleString('es-CL') : null;
+            const optometriaLink = URL_EXAMEN_OPTOMETRIA(id, pacienteMedicoId);
+            const biomicroscopiaLink = URL_EXAMEN_BIOMICROSCOPIA(id, pacienteMedicoId);
+
+            const diagnostico = consulta.diagnostico && consulta.diagnostico.diagnostico_principal
+                ? consulta.diagnostico.diagnostico_principal
+                : '';
+
+            return `
+                <div class="consulta-card">
+                    <div class="row align-items-center">
+                        <div class="col-md-3">
+                            <h6 class="mb-1">Paciente: ${nombrePaciente}</h6>
+                            <p class="text-muted mb-0">
+                                <small><i class="fas fa-calendar me-1"></i>${fechaConsulta}</small>
+                            </p>
+                        </div>
+                        <div class="col-md-3">
+                            <p class="mb-1"><strong>Hora:</strong> ${horaConsulta}</p>
+                            <p class="text-muted mb-0">
+                                <small><i class="fas fa-user-md me-1"></i>Dr. ${nombreMedico}</small>
+                            </p>
+                        </div>
+                        <div class="col-md-3">
+                            <span class="status-badge ${estadoClass} text-white">
+                                ${estadoTexto}
+                            </span>
+                            ${diagnostico ? `<p class="small text-muted mt-2 mb-0"><i class="fas fa-notes-medical me-1"></i>${diagnostico}</p>` : ''}
+                        </div>
+                        <div class="col-md-3 text-end">
+                            <button class="btn btn-outline-primary btn-sm me-2" onclick="verDetalles(${id})">
+                                <i class="fas fa-eye"></i> Ver
+                            </button>
+                            <button class="btn btn-outline-info btn-sm" onclick="editarConsulta(${id})">
+                                <i class="fas fa-edit"></i> Editar
+                            </button>
+                        </div>
+                    </div>
+                    <div class="row mt-3 align-items-center g-2">
+                        <div class="col-md-8">
+                            <small class="d-block ${bio ? 'text-success' : 'text-muted'}">
+                                <i class="fas fa-microscope me-2"></i>
+                                ${bio ? `${bioFecha ? bioFecha + ' · ' : ''}${bioResumen}` : bioResumen}
+                            </small>
+                        </div>
+                        <div class="col-md-4 d-flex justify-content-md-end">
+                            <div class="d-flex flex-column gap-2 align-items-md-end">
+                                <a class="btn btn-outline-primary btn-sm text-nowrap" href="${optometriaLink}">
+                                    <i class="fas fa-clipboard-list me-1"></i>Examen Optometria
+                                </a>
+                                <a class="btn btn-sm ${bio ? 'btn-outline-primary' : 'btn-primary'} text-nowrap" href="${biomicroscopiaLink}">
+                                    <i class="fas fa-microscope me-1"></i>Examen Biomicroscopia
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        container.innerHTML = consultasHTML;
+    }
+
+    // Función de búsqueda
+    function buscarConsultas() {
+        const searchTerm = (document.getElementById('searchConsulta').value || '').toLowerCase();
+        const fechaFilter = document.getElementById('filterFecha').value;
+        const estadoFilter = document.getElementById('filterEstado').value;
+        
+        let consultasFiltradas = consultasData.slice();
+
+        if (searchTerm) {
+            consultasFiltradas = consultasFiltradas.filter(consulta => {
+                const nombreCompleto = consulta.cliente
+                    ? `${consulta.cliente.nombres || ''} ${consulta.cliente.ap_pat || ''} ${consulta.cliente.ap_mat || ''}`.toLowerCase()
+                    : '';
+                const rut = consulta.cliente && consulta.cliente.rut ? consulta.cliente.rut.toLowerCase() : '';
+                const numeroConsulta = (consulta.numero_consulta || '').toLowerCase();
+                const bioResumen = consulta.biomicroscopia && consulta.biomicroscopia.resumen
+                    ? consulta.biomicroscopia.resumen.toLowerCase()
+                    : '';
+                return nombreCompleto.includes(searchTerm)
+                    || rut.includes(searchTerm)
+                    || numeroConsulta.includes(searchTerm)
+                    || bioResumen.includes(searchTerm);
+            });
+        }
+
+        if (fechaFilter) {
+            consultasFiltradas = consultasFiltradas.filter(consulta =>
+                typeof consulta.fecha_consulta === 'string' && consulta.fecha_consulta.startsWith(fechaFilter)
+            );
+        }
+
+        if (estadoFilter) {
+            consultasFiltradas = consultasFiltradas.filter(consulta => (consulta.estado || '') === estadoFilter);
+        }
+
+        mostrarConsultas(consultasFiltradas);
+        updateConsultasCount(consultasFiltradas.length);
+    }
+
+    // Contador
+    function updateConsultasCount(count) {
+        document.getElementById('totalConsultasCount').textContent = `${count} consulta${count !== 1 ? 's' : ''}`;
+    }
+
+    // Navegación
+    function verDetalles(consultaId) {
+        window.location.href = URL_VER_CONSULTA(consultaId);
+    }
+    function editarConsulta(consultaId) {
+        window.location.href = URL_EDITAR_CONSULTA(consultaId);
+    }
+
+    // Errores
+    function mostrarError(mensaje) {
+        document.getElementById('consultasList').innerHTML = `
+            <div class="text-center py-5">
+                <i class="fas fa-exclamation-triangle fa-3x text-warning"></i>
+                <h5 class="text-warning mt-3">Error</h5>
+                <p class="text-muted">${mensaje}</p>
+                <button class="btn btn-primary" onclick="cargarConsultas()">Reintentar</button>
+            </div>
+        `;
+        updateConsultasCount(0);
+    }
+</script>
+{% endblock %}
+

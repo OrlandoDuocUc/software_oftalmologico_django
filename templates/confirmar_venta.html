@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}Confirmar Venta - Oftalmetryc{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2>Confirmar Venta - confirmar_venta.html</h2>
+  <p class="text-muted">Revisa el pedido antes de finalizar la venta.</p>
+
+  <!-- Resumen del Pedido -->
+  <div class="card mb-4 shadow-sm">
+    <div class="card-header">
+      <h5 class="mb-0"><i class="fas fa-receipt me-2"></i>Resumen del Pedido</h5>
+    </div>
+    <div class="card-body">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th class="text-center">Cantidad</th>
+            <th class="text-end">Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+          <tr>
+            <td>{{ item.nombre }}</td>
+            <td class="text-center">{{ item.cantidad }}</td>
+            <td class="text-end">{{ item.subtotal|currency }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot class="fw-bold">
+          <tr>
+            <td colspan="2" class="text-end fs-5">Total General:</td>
+            <td class="text-end fs-5">{{ total_general|currency }}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+  <!-- Formulario de Cliente y Botones Finales -->
+  <form action="{% url 'sale_html:finalizar_venta_definitiva' %}" method="POST" novalidate>
+    {% csrf_token %}
+    <div class="card shadow-sm">
+      <div class="card-header">
+        <h5 class="mb-0">
+          <i class="fas fa-user me-2"></i>Información del Cliente (Opcional)
+        </h5>
+        <small class="text-muted d-block">
+          Si completas el <strong>RUC/Cédula</strong>, se creará/relacionará el cliente. Si lo dejas vacío, la venta queda <em>sin cliente</em>.
+        </small>
+      </div>
+      <div class="card-body">
+        <!-- Documento opcional: Cédula (10) o RUC (13). Conservamos name=cliente_rut para compatibilidad backend. -->
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <label for="cliente_rut" class="form-label">RUC/Cédula</label>
+            <input
+              type="text"
+              class="form-control"
+              id="cliente_rut"
+              name="cliente_rut"
+              placeholder="Cédula (10) o RUC (13)"
+              inputmode="numeric"
+              minlength="10"
+              maxlength="13"
+              pattern="(?:\d{10}|\d{13})"
+              title="Ingrese 10 dígitos (Cédula) o 13 dígitos (RUC)."
+              oninput="this.value=this.value.replace(/\D/g,'').slice(0,13)">
+            <div class="form-text">Acepta 10 dígitos (Cédula) o 13 dígitos (RUC) — solo números.</div>
+          </div>
+          <div class="col-md-4 mb-3">
+            <label for="cliente_nombres" class="form-label">Nombres</label>
+            <input type="text" class="form-control" id="cliente_nombres" name="cliente_nombres" placeholder="Ej: Ana María">
+          </div>
+          <div class="col-md-4 mb-3">
+            <label for="cliente_ap_pat" class="form-label">Primer Apellido</label>
+            <input type="text" class="form-control" id="cliente_ap_pat" name="cliente_ap_pat" placeholder="Ej: Pérez">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <label for="cliente_ap_mat" class="form-label">Segundo Apellido</label>
+            <input type="text" class="form-control" id="cliente_ap_mat" name="cliente_ap_mat" placeholder="Ej: Gómez">
+          </div>
+          <div class="col-md-4 mb-3">
+            <label for="cliente_telefono" class="form-label">Teléfono (EC)</label>
+            <input
+              type="tel"
+              class="form-control"
+              id="cliente_telefono"
+              name="cliente_telefono"
+              placeholder="09xxxxxxxx o +5939xxxxxxxx"
+              pattern="^(?:09\d{8}|0[2-7]\d{7}|\+5939\d{8}|\+593[2-7]\d{7})$"
+              title="Móvil: 09xxxxxxxx | Fijo: 0[2–7]xxxxxxx | Internacional: +5939xxxxxxxx o +593[2–7]xxxxxxx">
+            <div class="form-text">Móvil: 09 + 8 dígitos · Fijo: 0(2–7) + 7 dígitos · También formato +593…</div>
+          </div>
+          <div class="col-md-4 mb-3">
+            <label for="cliente_email" class="form-label">Email</label>
+            <input type="email" class="form-control" id="cliente_email" name="cliente_email" placeholder="ejemplo@correo.com">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-8 mb-3">
+            <label for="cliente_direccion" class="form-label">Dirección</label>
+            <input type="text" class="form-control" id="cliente_direccion" name="cliente_direccion" placeholder="Calle, número, ciudad">
+          </div>
+          <div class="col-md-4 mb-3">
+            <label for="metodo_pago" class="form-label">Método de pago</label>
+            <select class="form-select" id="metodo_pago" name="metodo_pago">
+              <option value="efectivo">Efectivo</option>
+              <option value="debito">Débito</option>
+              <option value="credito">Crédito</option>
+              <option value="transferencia">Transferencia</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-end gap-2 mt-4">
+      <a href="{% url 'sale_html:registrar_venta_page' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Volver y Modificar Pedido
+      </a>
+      <button type="submit" class="btn btn-success btn-lg">
+        <i class="fas fa-check-circle me-2"></i>Finalizar y Generar Boleta
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

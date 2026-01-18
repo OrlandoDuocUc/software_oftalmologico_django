@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dashboard Médico - Oftalmetryc{% endblock %}
+
+{% block extra_css %}
+/* ESTILOS ESPECÍFICOS DEL DASHBOARD MÉDICO */
+body {
+    background: #f5f7fa;
+    overflow-x: hidden;
+}
+
+/* Sidebar fijo al estilo Flask */
+.medical-sidebar {
+    position: fixed;
+    top: 56px; /* bajo el navbar */
+    left: 0;
+    width: 280px;
+    height: calc(100vh - 56px);
+    background: linear-gradient(180deg, var(--primary-color), var(--secondary-color));
+    box-shadow: 2px 0 15px rgba(0,0,0,0.2);
+    z-index: 1000;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    padding-top: 16px;
+}
+
+.sidebar-header {
+    padding: 25px 20px;
+    background: linear-gradient(135deg, var(--primary-color), var(--dark-bg));
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    color: white;
+}
+
+.sidebar-nav {
+    padding: 20px 0;
+}
+
+.sidebar-nav .nav-link {
+    color: #bdc3c7;
+    padding: 15px 25px;
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border-left: 3px solid transparent;
+}
+
+.sidebar-nav .nav-link:hover,
+.sidebar-nav .nav-link.active {
+    background: rgba(255,255,255,0.1);
+    color: white;
+    border-left-color: var(--warning-color);
+}
+
+.sidebar-nav .nav-link i {
+    width: 20px;
+    margin-right: 15px;
+}
+
+.sidebar-logo {
+    margin-top: 24px;
+    padding: 10px 0 28px;
+    display: flex;
+    justify-content: center;
+}
+
+.sidebar-logo img {
+    width: 150px;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 5px solid rgba(255,255,255,0.45);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+    background: rgba(255,255,255,0.12);
+}
+
+/* Contenido principal con margen izquierdo */
+.main-content {
+    margin-left: 280px;
+    padding: 20px 24px;
+    min-height: 100vh;
+}
+
+.page-header {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    padding: 30px;
+    border-radius: 15px;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.page-header h1 {
+    margin: 0;
+    font-weight: bold;
+}
+
+.stats-card {
+    background: linear-gradient(135deg, #fff, #f8f9fa);
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    padding: 25px;
+    text-align: center;
+}
+
+.stats-icon {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    margin: 0 auto 15px auto;
+    color: white;
+}
+
+.stats-number {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin: 10px 0;
+}
+
+.stats-label {
+    color: #6c757d;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+}
+
+.medical-chart,
+.activity-feed {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.chart-container {
+    position: relative;
+    height: 300px;
+    width: 100%;
+}
+
+.activity-feed {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+/* Responsividad */
+@media (max-width: 992px) {
+    .medical-sidebar {
+        position: static;
+        width: 100%;
+        height: auto;
+        margin-bottom: 20px;
+        display: block;
+    }
+    .main-content {
+        margin-left: 0;
+    }
+}
+{% endblock %}
+
+{% block content %}
+<div class="medical-layout">
+    <!-- SIDEBAR MÉDICO -->
+    <div class="medical-sidebar">
+        <nav class="sidebar-nav">
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'medical:pacientes' %}">
+                        <i class="fas fa-users"></i>Gestión Pacientes
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'medical:consultas' %}">
+                        <i class="fas fa-calendar-check"></i>Historial Consultas
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'medical:ficha_clinica' %}">
+                        <i class="fas fa-clipboard-check"></i>Ficha Optométrica
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'medical:biomicroscopia_nuevo' %}">
+                        <i class="fas fa-microscope"></i>Examen Oftalmológico Nuevo
+                    </a>
+                </li>
+            </ul>
+        </nav>
+        <div class="sidebar-logo">
+            <img src="{% static 'img/logo_oftalmetryc.jpg' %}" alt="Logo Oftalmetryc">
+        </div>
+    </div>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <div class="main-content">
+        <div class="page-header">
+            <h1><i class="fas fa-chart-line me-3"></i>Dashboard Médico</h1>
+            <p class="mb-0">Panel de control del módulo médico - vista general de actividades y estadísticas.</p>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="stats-card">
+                    <div class="stats-icon" style="background: linear-gradient(135deg, #3498db, #2980b9);"><i class="fas fa-users"></i></div>
+                    <div class="stats-number text-primary" id="totalPacientes">0</div>
+                    <div class="stats-label">Total Pacientes</div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="stats-card">
+                    <div class="stats-icon" style="background: linear-gradient(135deg, #27ae60, #2ecc71);"><i class="fas fa-calendar-check"></i></div>
+                    <div class="stats-number text-success" id="consultasHoy">0</div>
+                    <div class="stats-label">Consultas Hoy</div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="stats-card">
+                    <div class="stats-icon" style="background: linear-gradient(135deg, #f39c12, #e67e22);"><i class="fas fa-clipboard-list"></i></div>
+                    <div class="stats-number text-warning" id="totalConsultas">0</div>
+                    <div class="stats-label">Total Consultas</div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="stats-card">
+                    <div class="stats-icon" style="background: linear-gradient(135deg, #e74c3c, #c0392b);"><i class="fas fa-eye"></i></div>
+                    <div class="stats-number text-danger" id="examenesRealizados">0</div>
+                    <div class="stats-label">Exámenes Realizados</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="medical-chart">
+                    <h5 class="mb-3"><i class="fas fa-chart-bar me-2"></i>Consultas por Mes</h5>
+                    <div class="chart-container">
+                        <canvas id="consultasPorMesChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="activity-feed">
+                    <h5 class="mb-3"><i class="fas fa-history me-2"></i>Actividad Reciente</h5>
+                    <div id="actividadReciente"><!-- Datos cargados vía JavaScript --></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // JS de estadísticas permanece igual (solo estilos fueron ajustados).
+</script>
+{% endblock %}

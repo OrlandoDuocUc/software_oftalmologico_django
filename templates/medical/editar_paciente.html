@@ -1,0 +1,472 @@
+﻿{% extends "base.html" %}
+
+{% block title %}Editar Paciente - Oftalmetryc{% endblock %}
+
+{% block extra_css %}
+/* ESTILOS ESPECIFICOS DE EDICION DE PACIENTE */
+        .page-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .form-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .section-title {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        
+        .patient-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.8rem;
+            margin: 0 auto 20px;
+        }
+        
+        .btn-group-custom {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-top: 20px;
+        }
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <!-- HEADER DE LA PAGINA -->
+    <div class="page-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1><i class="fas fa-user-edit me-3"></i>Editar Paciente</h1>
+                <p class="mb-0" id="patientSubtitle">Modificar informacion del paciente medico</p>
+            </div>
+            <div>
+                <a href="{% url 'medical:pacientes' %}" class="btn btn-light btn-lg me-2">
+                    <i class="fas fa-arrow-left me-2"></i>Volver
+                </a>
+                <button class="btn btn-outline-light btn-lg" onclick="verHistorial()" id="btnHistorial" disabled>
+                    <i class="fas fa-history me-2"></i>Historial
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FORMULARIO DE EDICION -->
+    <form id="editarPacienteForm">
+        <!-- INFORMACION PERSONAL -->
+        <div class="form-section">
+            <h4 class="section-title">
+                <i class="fas fa-user me-2"></i>Informacion Personal
+            </h4>
+            
+            <div class="text-center mb-4">
+                <div class="patient-avatar" id="patientAvatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <h5 class="text-muted" id="patientNameDisplay">Cargando informacion...</h5>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group mb-3">
+                        <label for="nombres" class="form-label">Nombres <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="nombres" name="nombres" required>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group mb-3">
+                        <label for="apellido_paterno" class="form-label">Apellido Paterno <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="apellido_paterno" name="apellido_paterno" required>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group mb-3">
+                        <label for="apellido_materno" class="form-label">Apellido Materno</label>
+                        <input type="text" class="form-control" id="apellido_materno" name="apellido_materno">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group mb-3">
+                        <label for="rut" class="form-label">RUT</label>
+                        <input type="text" class="form-control" id="rut" name="rut" placeholder="12.345.678-9">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group mb-3">
+                        <label for="telefono" class="form-label">Telefono</label>
+                        <input type="tel" class="form-control" id="telefono" name="telefono" placeholder="+56 9 1234 5678">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" placeholder="ejemplo@email.com">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group mb-3">
+                        <label for="fecha_nacimiento" class="form-label">Fecha de Nacimiento</label>
+                        <input type="date" class="form-control" id="fecha_nacimiento" name="fecha_nacimiento">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group mb-3">
+                        <label for="direccion" class="form-label">Direccion</label>
+                        <input type="text" class="form-control" id="direccion" name="direccion" placeholder="Calle, numero, comuna">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- INFORMACION MEDICA -->
+        <div class="form-section">
+            <h4 class="section-title">
+                <i class="fas fa-notes-medical me-2"></i>Informacion Medica
+            </h4>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group mb-3">
+                        <label for="numero_ficha" class="form-label">Numero de Ficha</label>
+                        <input type="text" class="form-control" id="numero_ficha" name="numero_ficha" readonly>
+                        <small class="form-text text-muted">El numero de ficha se genera automaticamente</small>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group mb-3">
+                        <label for="estado" class="form-label">Estado</label>
+                        <select class="form-select" id="estado" name="estado">
+                            <option value="true">Activo</option>
+                            <option value="false">Inactivo</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group mb-3">
+                <label for="antecedentes_medicos" class="form-label">Antecedentes Medicos</label>
+                <textarea class="form-control" id="antecedentes_medicos" name="antecedentes_medicos" rows="3" 
+                         placeholder="Describir antecedentes medicos relevantes..."></textarea>
+            </div>
+            
+            <div class="form-group mb-3">
+                <label for="antecedentes_oculares" class="form-label">Antecedentes Oculares</label>
+                <textarea class="form-control" id="antecedentes_oculares" name="antecedentes_oculares" rows="3" 
+                         placeholder="Describir antecedentes oculares especificos..."></textarea>
+            </div>
+            
+            <div class="form-group mb-3">
+                <label for="alergias" class="form-label">Alergias</label>
+                <textarea class="form-control" id="alergias" name="alergias" rows="2" 
+                         placeholder="Describir alergias conocidas..."></textarea>
+            </div>
+            
+            <div class="form-group mb-3">
+                <label for="medicamentos_actuales" class="form-label">Medicamentos Actuales</label>
+                <textarea class="form-control" id="medicamentos_actuales" name="medicamentos_actuales" rows="2" 
+                         placeholder="Listar medicamentos que toma actualmente..."></textarea>
+            </div>
+        </div>
+
+        <!-- CONTACTO DE EMERGENCIA -->
+        <div class="form-section">
+            <h4 class="section-title">
+                <i class="fas fa-phone-alt me-2"></i>Contacto de Emergencia
+            </h4>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group mb-3">
+                        <label for="contacto_emergencia" class="form-label">Nombre del Contacto</label>
+                        <input type="text" class="form-control" id="contacto_emergencia" name="contacto_emergencia" 
+                               placeholder="Nombre completo del contacto">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group mb-3">
+                        <label for="telefono_emergencia" class="form-label">Telefono de Emergencia</label>
+                        <input type="tel" class="form-control" id="telefono_emergencia" name="telefono_emergencia" 
+                               placeholder="+56 9 1234 5678">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- BOTONES DE ACCION -->
+        <div class="btn-group-custom">
+            <div class="d-flex justify-content-between">
+                <div>
+                    <button type="button" class="btn btn-secondary me-2" onclick="cancelarEdicion()">
+                        <i class="fas fa-times me-2"></i>Cancelar
+                    </button>
+                    <button type="button" class="btn btn-outline-primary" onclick="resetearFormulario()">
+                        <i class="fas fa-undo me-2"></i>Restaurar
+                    </button>
+                </div>
+                <div>
+                    <button type="submit" class="btn btn-primary" id="btnGuardar">
+                        <i class="fas fa-save me-2"></i>Guardar Cambios
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+    // Variables globales
+    let pacienteId = window.location.pathname.split('/')[2];
+    let pacienteOriginal = {};
+    let clienteOriginal = {};
+
+    // Cargar informaciÃ³n al iniciar
+    document.addEventListener('DOMContentLoaded', function() {
+        if (pacienteId) {
+            cargarInformacionPaciente();
+        } else {
+            mostrarError('ID de paciente no vÃ¡lido');
+        }
+    });
+
+    // Cargar informaciÃ³n del paciente
+    const API_PACIENTE = (id) => "{% url 'medical:api_get_paciente_medico' paciente_id=0 %}".replace('/0/', '/' + id + '/');
+    const API_PACIENTES = "{% url 'medical:api_pacientes_medicos' %}";
+    const API_CLIENTE = (id) => "{% url 'medical:api_cliente' cliente_id=0 %}".replace('/0/', '/' + id + '/');
+    const LISTA_PACIENTES_URL = "{% url 'medical:pacientes' %}";
+    const HISTORIAL_TEMPLATE = "{% url 'medical:historial_paciente' paciente_id=0 %}";
+
+    async function cargarInformacionPaciente() {
+        try {
+            const response = await fetch(API_PACIENTE(pacienteId));
+            const data = await response.json();
+            
+            if (data.success) {
+                pacienteOriginal = data.paciente_medico;
+                clienteOriginal = data.cliente;
+                
+                poblarFormulario(data);
+                habilitarHistorial();
+            } else {
+                mostrarError('Error al cargar informacion del paciente');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            mostrarError('Error de conexion al cargar paciente');
+        }
+    }
+
+    // Poblar formulario con datos
+    function poblarFormulario(data) {
+        const paciente = data.paciente_medico;
+        const cliente = data.cliente;
+        
+        // InformaciÃ³n personal (cliente)
+        document.getElementById('nombres').value = cliente.nombres || '';
+        document.getElementById('apellido_paterno').value = cliente.apellido_paterno || '';
+        document.getElementById('apellido_materno').value = cliente.apellido_materno || '';
+        document.getElementById('rut').value = cliente.rut || '';
+        document.getElementById('telefono').value = cliente.telefono || '';
+        document.getElementById('email').value = cliente.email || '';
+        document.getElementById('fecha_nacimiento').value = cliente.fecha_nacimiento ? 
+            cliente.fecha_nacimiento.split('T')[0] : '';
+        document.getElementById('direccion').value = cliente.direccion || '';
+        
+        // InformaciÃ³n mÃ©dica (paciente mÃ©dico)
+        document.getElementById('numero_ficha').value = paciente.numero_ficha || '';
+        document.getElementById('estado').value = paciente.estado ? 'true' : 'false';
+        document.getElementById('antecedentes_medicos').value = paciente.antecedentes_medicos || '';
+        document.getElementById('antecedentes_oculares').value = paciente.antecedentes_oculares || '';
+        document.getElementById('alergias').value = paciente.alergias || '';
+        document.getElementById('medicamentos_actuales').value = paciente.medicamentos_actuales || '';
+        
+        // Contacto de emergencia
+        document.getElementById('contacto_emergencia').value = paciente.contacto_emergencia || '';
+        document.getElementById('telefono_emergencia').value = paciente.telefono_emergencia || '';
+        
+        // Actualizar avatar y titulo
+        const nombreCompleto = `${cliente.nombres} ${cliente.apellido_paterno} ${cliente.apellido_materno}`;
+        document.getElementById('patientNameDisplay').textContent = nombreCompleto;
+        document.getElementById('patientSubtitle').textContent = `Editar informaciÃ³n de ${cliente.nombres}`;
+        
+        // Generar iniciales para avatar
+        const iniciales = `${cliente.nombres.charAt(0)}${cliente.apellido_paterno.charAt(0)}`;
+        document.getElementById('patientAvatar').textContent = iniciales;
+    }
+
+    // Manejar envÃ­o del formulario
+    document.getElementById('editarPacienteForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const data = Object.fromEntries(formData);
+        
+        // Separar datos de cliente y paciente mÃ©dico
+        const clienteData = {
+            nombres: data.nombres,
+            apellido_paterno: data.apellido_paterno,
+            apellido_materno: data.apellido_materno,
+            rut: data.rut,
+            telefono: data.telefono,
+            email: data.email,
+            fecha_nacimiento: data.fecha_nacimiento,
+            direccion: data.direccion
+        };
+        
+        const pacienteData = {
+            antecedentes_medicos: data.antecedentes_medicos,
+            antecedentes_oculares: data.antecedentes_oculares,
+            alergias: data.alergias,
+            medicamentos_actuales: data.medicamentos_actuales,
+            contacto_emergencia: data.contacto_emergencia,
+            telefono_emergencia: data.telefono_emergencia,
+            estado: data.estado === 'true'
+        };
+        
+        await guardarCambios(clienteData, pacienteData);
+    });
+
+    // Guardar cambios
+    async function guardarCambios(clienteData, pacienteData) {
+        const btnGuardar = document.getElementById('btnGuardar');
+        btnGuardar.disabled = true;
+        btnGuardar.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Guardando...';
+        
+        try {
+            const response = await fetch(API_PACIENTE(pacienteId), {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    cliente: clienteData,
+                    paciente_medico: pacienteData
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Mostrar mensaje de Ã©xito
+                Swal.fire({
+                    title: '¡Éxito!',
+                    text: 'Informacion del paciente actualizada correctamente',
+                    icon: 'success',
+                    confirmButtonText: 'Continuar'
+                }).then(() => {
+                    // Recargar informacion
+                    cargarInformacionPaciente();
+                });
+            } else {
+                throw new Error(data.message || 'Error al actualizar');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            Swal.fire({
+                title: 'Error',
+                text: 'Error al guardar los cambios: ' + error.message,
+                icon: 'error',
+                confirmButtonText: 'Entendido'
+            });
+        } finally {
+            btnGuardar.disabled = false;
+            btnGuardar.innerHTML = '<i class="fas fa-save me-2"></i>Guardar Cambios';
+        }
+    }
+
+    // Funciones de navegacion
+    function verHistorial() {
+        window.location.href = HISTORIAL_TEMPLATE.replace('/0/', '/' + pacienteId + '/');
+    }
+
+    function cancelarEdicion() {
+        Swal.fire({
+            title: 'Cancelar edición?',
+            text: 'Se perderán los cambios no guardados',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Si, cancelar',
+            cancelButtonText: 'Continuar editando'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = LISTA_PACIENTES_URL;
+            }
+        });
+    }
+
+    function resetearFormulario() {
+        Swal.fire({
+            title: '¿Restaurar valores originales?',
+            text: 'Se restaurarán todos los campos a su valor original',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, restaurar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                poblarFormulario({
+                    paciente_medico: pacienteOriginal,
+                    cliente: clienteOriginal
+                });
+                Swal.fire('¡Restaurado!', 'Formulario restaurado a valores originales', 'success');
+            }
+        });
+    }
+
+    function habilitarHistorial() {
+        const btn = document.getElementById('btnHistorial');
+        btn.disabled = false;
+    }
+
+    function mostrarError(mensaje) {
+        Swal.fire({
+            title: 'Error',
+            text: mensaje,
+            icon: 'error',
+            confirmButtonText: 'Entendido'
+        }).then(() => {
+            window.location.href = LISTA_PACIENTES_URL;
+        });
+    }
+
+    // Incluir SweetAlert2
+    if (!document.querySelector('script[src*="sweetalert2"]')) {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
+        document.head.appendChild(script);
+    }
+</script>
+{% endblock %}
+
+
+
+

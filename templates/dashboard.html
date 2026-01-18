@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Oftalmetryc{% endblock %}
+
+{% block extra_css %}
+/* Estilos para las tarjetas de métricas */
+.card-metric { 
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+    color: white;
+}
+
+.card-metric:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+}
+
+/* Paleta de colores para las tarjetas */
+.bg-ventas { background: linear-gradient(135deg, #27ae60, #2ecc71); }
+.bg-examenes { background: linear-gradient(135deg, #8e44ad, #9b59b6); }
+.bg-pacientes { background: linear-gradient(135deg, #d35400, #e67e22); }
+/* Nuevo color para la tarjeta de productos */
+.bg-productos { background: linear-gradient(135deg, #2980b9, #3498db); }
+
+.refresh-btn { 
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+/* --- CORRECCIÓN: Se elimina la rotación al pasar el mouse --- */
+.refresh-btn:hover { 
+    opacity: 0.8;
+}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>Dashboard Oftalmologica</h2>
+            <!--  CORRECCIÓN: Añadir la fecha actual -->
+            <p class="text-muted mb-0" id="dashboard-date">Cargando fecha...</p>
+        </div>
+        <button class="btn btn-outline-primary refresh-btn" onclick="location.reload()" title="Actualizar datos">
+            <i class="fas fa-sync-alt"></i>
+        </button>
+    </div>
+
+    <!-- Fila Principal de Métricas -->
+    <div class="row mb-4">
+        <!-- Total Ventas del Día -->
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card card-metric bg-ventas h-100">
+                <div class="card-body d-flex flex-column justify-content-between">
+                    <div>
+                        <h5 class="card-title"><i class="fas fa-dollar-sign me-2"></i>Total Ventas Día</h5>
+                        <h2 class="display-6 fw-bold">{{ total_ventas_hoy|currency }}</h2>
+                    </div>
+                    <p class="card-text small mb-0">Suma de todas las ventas de hoy.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Exámenes Realizados Hoy -->
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card card-metric bg-examenes h-100">
+                <div class="card-body d-flex flex-column justify-content-between">
+                    <div>
+                        <h5 class="card-title"><i class="fas fa-eye me-2"></i>Exámenes Realizados Hoy</h5>
+                        <h2 class="display-6 fw-bold">{{ examenes_hoy|default_if_none:0 }}</h2>
+                    </div>
+                    <p class="card-text small mb-0">Total de exámenes oftalmológicos.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Pacientes Atendidos Hoy -->
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card card-metric bg-pacientes h-100">
+                <div class="card-body d-flex flex-column justify-content-between">
+                    <div>
+                        <h5 class="card-title"><i class="fas fa-user-injured me-2"></i>Pacientes Atendidos Hoy</h5>
+                        <h2 class="display-6 fw-bold">{{ pacientes_atendidos_hoy|default_if_none:0 }}</h2>
+                    </div>
+                    <p class="card-text small mb-0">Pacientes únicos con consulta médica.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- --- CORRECCIÓN: Tarjeta "Clientes Nuevos" cambiada a "Productos Vendidos" --- -->
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card card-metric bg-productos h-100">
+                <div class="card-body d-flex flex-column justify-content-between">
+                    <div>
+                        <h5 class="card-title"><i class="fas fa-box-open me-2"></i>Productos Vendidos Hoy</h5>
+                        <!-- Lógica a implementar: contar la suma de cantidades de productos vendidos hoy -->
+                        <h2 class="display-6 fw-bold">{{ productos_vendidos_hoy|default_if_none:0 }}</h2>
+                    </div>
+                    <p class="card-text small mb-0">Unidades de productos vendidas.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fila Secundaria: Ventas Recientes y Top Productos -->
+    <div class="row">
+        <!-- Ventas Recientes -->
+        <div class="col-lg-8 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-history me-2"></i>Ventas Recientes</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Producto</th>
+                                    <th>Cliente</th>
+                                    <th class="text-end">Total</th>
+                                    <th>Hora</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for v in ventas_recientes %}
+                                <tr>
+                                    <td>{% if v.producto %}{{ v.producto.nombre }}{% else %}N/A{% endif %}</td>
+                                    <td>{% if v.cliente %}{{ v.cliente.nombres }}{% else %}Sin cliente{% endif %}</td>
+                                    <td class="text-end">{{ v.total|currency }}</td>
+                                    <td>{{ v.fecha_venta|date:"H:i" }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted">No hay ventas recientes.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top 5 Productos del Mes -->
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-star me-2"></i>Top 5 Productos del Mes</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Lógica a implementar: obtener los 5 productos más vendidos del mes -->
+                    <ul class="list-group list-group-flush">
+                        {% for producto in top_productos_mes %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            {{ producto.nombre }}
+                            <span class="badge bg-primary rounded-pill">{{ producto.cantidad_vendida }}</span>
+                        </li>
+                        {% empty %}
+                        <li class="list-group-item text-center text-muted">No hay datos de ventas este mes.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Alerta de Bajo Stock (si aplica) -->
+    {% if productos_bajo_stock %}
+    <div class="alert alert-warning mt-4">
+        <strong>¡Atención!</strong> Productos con bajo stock (10 o menos unidades):
+        <ul class="mb-0 mt-2">
+            {% for producto in productos_bajo_stock %}
+            <li><strong>{{ producto.nombre }}</strong> - Stock actual: {{ producto.cantidad|default:0 }} unidades</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // --- CORRECCIÓN: Añadida función para mostrar la fecha ---
+    function setDashboardDate() {
+        const now = new Date();
+        const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
+        // Usamos 'es-CL' para asegurar el formato dd/mm/yyyy
+        const dateString = now.toLocaleDateString('es-CL', options);
+        document.getElementById('dashboard-date').textContent = dateString;
+    }
+
+    // Corrección: La hora ahora se muestra para Chile (Santiago)
+    function updateClock() {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('es-CL', {
+            timeZone: 'America/Santiago',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        document.title = `Dashboard Oftalmetryc - ${timeString}`;
+    }
+
+    // Ejecutar las funciones cuando la página cargue
+    document.addEventListener('DOMContentLoaded', () => {
+        setDashboardDate();
+        updateClock();
+        // Actualizar el reloj del título cada segundo
+        setInterval(updateClock, 1000);
+    });
+</script>
+{% endblock %}
+

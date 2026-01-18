@@ -1,0 +1,507 @@
+{% extends "base.html" %}
+{% block title %}Ficha Clínica - Oftalmetryc{% endblock %}
+
+{% block extra_css %}
+/* ESTILOS ESPECÍFICOS DE FICHA Optometrica Clinica  */
+.page-header {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    padding: 30px;
+    border-radius: 15px;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+.form-section {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+.section-title {
+    color: var(--primary-color);
+    border-bottom: 2px solid var(--primary-color);
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+    font-weight: bold;
+}
+.form-row { margin-bottom: 15px; }
+.btn-group-custom {
+    background: white;
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    margin-top: 20px;
+}
+.required-field { color: red; }
+/* Estilos para tablas de examen */
+.exam-table { width: 100%; margin-bottom: 1rem; border-collapse: collapse; }
+.exam-table th, .exam-table td { border: 1px solid #dee2e6; padding: 0.5rem; text-align: center; vertical-align: middle; }
+.exam-table th { background-color: #f8f9fa; font-weight: bold; }
+.exam-table .label-col { text-align: left; font-weight: bold; background-color: #f8f9fa; width: 15%;}
+.exam-table input { width: 100%; border: none; text-align: center; background: transparent; padding: 2px; }
+.exam-table input:focus { outline: 1px solid var(--primary-color); }
+.small-note { font-size: .9rem; color: #6c757d; }
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <!-- HEADER DE LA PÁGINA -->
+    <div class="page-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1><i class="fas fa-file-medical me-3"></i>Ficha Optometrica Clinica</h1>
+                <p class="mb-0">Registro de consulta médica especializada</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{% url 'medical:nuevo_paciente' %}" class="btn btn-outline-light btn-lg">
+                    <i class="fas fa-user-plus me-2"></i>Nuevo Paciente
+                </a>
+                <a href="{% url 'medical:consultas' %}" class="btn btn-light btn-lg">
+                    <i class="fas fa-list me-2"></i>Ver Historial
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <form id="fichaClinicaForm">
+        <!-- DATOS DEL PACIENTE -->
+        <div class="form-section">
+            <h4 class="section-title"><i class="fas fa-user me-2"></i>Datos del Paciente</h4>
+            <div class="row">
+                <div class="col-md-6 form-row">
+                    <label for="pacienteMedicoId" class="form-label">Seleccionar Paciente <span class="required-field">*</span></label>
+                    <input id="pacienteMedicoId" placeholder="Buscar paciente por nombre o Cédula/RUC..." required>
+                </div>
+                <div class="col-md-6 form-row">
+                    <label for="numeroConsulta" class="form-label">Número de Consulta <span class="required-field">*</span></label>
+                    <input type="text" class="form-control" id="numeroConsulta" readonly>
+                    <small class="small-note">Formato corto (20 caracteres) compatible con BD.</small>
+                </div>
+            </div>
+            <div id="selectedPatientInfo" class="mt-2 p-3 bg-light rounded" style="display: none;">
+                <h6>Paciente Seleccionado:</h6>
+                <p class="mb-0"><strong>Nombre:</strong> <span id="infoPatientName"></span></p>
+                <p class="mb-0"><strong>Cédula/RUC:</strong> <span id="infoPatientDoc"></span></p>
+            </div>
+        </div>
+
+        <!-- MOTIVO + FECHA -->
+        <div class="form-section">
+            <div class="row">
+                <div class="col-md-4 form-row">
+                    <label for="fechaConsulta" class="form-label">Fecha de Consulta <span class="required-field">*</span></label>
+                    <input type="datetime-local" class="form-control" id="fechaConsulta" required>
+                </div>
+                <div class="col-md-8 form-row">
+                    <label for="motivoConsulta" class="form-label">Motivo de Consulta <span class="required-field">*</span></label>
+                    <input type="text" class="form-control" id="motivoConsulta" placeholder="Motivo principal de la consulta" required>
+                </div>
+            </div>
+        </div>
+
+        <!-- EXAMEN VISUAL -->
+        <div class="form-section">
+            <h4 class="section-title"><i class="fas fa-eye me-2"></i>Examen Visual</h4>
+
+            <!-- Agudeza Visual y Dominancia -->
+            <table class="exam-table">
+                <tr>
+                    <th rowspan="2">AV</th><th colspan="3">Distancia</th><th colspan="3">Próxima</th><th colspan="2">Dominante</th>
+                </tr>
+                <tr>
+                    <th>OD</th><th>OI</th><th>AO</th><th>OD</th><th>OI</th><th>AO</th><th>OD</th><th>OI</th>
+                </tr>
+                <tr>
+                    <td class="label-col">SC</td>
+                    <td><input type="text" id="av_dist_od_sc"></td><td><input type="text" id="av_dist_oi_sc"></td><td><input type="text" id="av_dist_ao_sc"></td>
+                    <td><input type="text" id="av_prox_od_sc"></td><td><input type="text" id="av_prox_oi_sc"></td><td><input type="text" id="av_prox_ao_sc"></td>
+                    <td rowspan="3"><input type="text" id="dominante_od"></td><td rowspan="3"><input type="text" id="dominante_oi"></td>
+                </tr>
+                <tr>
+                    <td class="label-col">CC</td>
+                    <td><input type="text" id="av_dist_od_cc"></td><td><input type="text" id="av_dist_oi_cc"></td><td><input type="text" id="av_dist_ao_cc"></td>
+                    <td><input type="text" id="av_prox_od_cc"></td><td><input type="text" id="av_prox_oi_cc"></td><td><input type="text" id="av_prox_ao_cc"></td>
+                </tr>
+                <tr>
+                    <td class="label-col">PH</td>
+                    <td><input type="text" id="av_dist_od_ph"></td><td><input type="text" id="av_dist_oi_ph"></td><td><input type="text" id="av_dist_ao_ph"></td>
+                    <td><input type="text" id="av_prox_od_ph"></td><td><input type="text" id="av_prox_oi_ph"></td><td><input type="text" id="av_prox_ao_ph"></td>
+                </tr>
+            </table>
+
+            <!-- Lensometría / Queratometría / Autorefractor / Subjetivo -->
+            <div class="row">
+                <div class="col-md-6">
+                    <table class="exam-table">
+                        <tr><th colspan="2">Lensometría</th><th colspan="2">Queratometría</th></tr>
+                        <tr><td class="label-col">OD</td><td><input type="text" id="lens_od"></td><td class="label-col">OD</td><td><input type="text" id="quera_od"></td></tr>
+                        <tr><td class="label-col">OI</td><td><input type="text" id="lens_oi"></td><td class="label-col">OI</td><td><input type="text" id="quera_oi"></td></tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <table class="exam-table">
+                        <tr><th></th><th>ESF</th><th>CYL</th><th>EJE</th><th>AV</th></tr>
+                        <tr><td class="label-col">Autorefractor OD</td><td><input type="text" id="auto_od_esf"></td><td><input type="text" id="auto_od_cyl"></td><td><input type="text" id="auto_od_eje"></td><td><input type="text" id="auto_od_av"></td></tr>
+                        <tr><td class="label-col">Autorefractor OI</td><td><input type="text" id="auto_oi_esf"></td><td><input type="text" id="auto_oi_cyl"></td><td><input type="text" id="auto_oi_eje"></td><td><input type="text" id="auto_oi_av"></td></tr>
+                        <tr><td class="label-col">Subjetivo OD</td><td><input type="text" id="subj_od_esf"></td><td><input type="text" id="subj_od_cyl"></td><td><input type="text" id="subj_od_eje"></td><td><input type="text" id="subj_od_av"></td></tr>
+                        <tr><td class="label-col">Subjetivo OI</td><td><input type="text" id="subj_oi_esf"></td><td><input type="text" id="subj_oi_cyl"></td><td><input type="text" id="subj_oi_eje"></td><td><input type="text" id="subj_oi_av"></td></tr>
+                    </table>
+                </div>
+            </div>
+
+            <!-- RX FINAL -->
+            <h5 class="text-primary mt-3 mb-3">RX Final</h5>
+            <table class="exam-table">
+                <tr><th></th><th>ESF</th><th>CYL</th><th>EJE</th><th>AVL</th><th>AVC</th><th>AO</th><th>DP</th><th>NP</th><th>ADD</th><th>ALT</th></tr>
+                <tr><td class="label-col">OD</td><td><input type="text" id="rx_od_esf"></td><td><input type="text" id="rx_od_cyl"></td><td><input type="text" id="rx_od_eje"></td><td><input type="text" id="rx_od_avl"></td><td><input type="text" id="rx_od_avc"></td><td rowspan="2"><input type="text" id="rx_ao"></td><td rowspan="2"><input type="text" id="rx_dp"></td><td rowspan="2"><input type="text" id="rx_np"></td><td><input type="text" id="rx_od_add"></td><td rowspan="2"><input type="text" id="rx_alt"></td></tr>
+                <tr><td class="label-col">OI</td><td><input type="text" id="rx_oi_esf"></td><td><input type="text" id="rx_oi_cyl"></td><td><input type="text" id="rx_oi_eje"></td><td><input type="text" id="rx_oi_avl"></td><td><input type="text" id="rx_oi_avc"></td><td><input type="text" id="rx_oi_add"></td></tr>
+            </table>
+
+            <!-- LENTES DE CONTACTO -->
+            <h5 class="text-primary mt-3 mb-3">Lentes de Contacto</h5>
+            <table class="exam-table">
+                <tr><th></th><th>Poder</th><th>Curva Base</th><th>Diámetro</th><th>Adición</th><th>Diseño</th><th>Material</th></tr>
+                <tr><td class="label-col">OD</td><td><input type="text" id="lc_od_poder"></td><td><input type="text" id="lc_od_cb"></td><td><input type="text" id="lc_od_dia"></td><td><input type="text" id="lc_od_add"></td><td><input type="text" id="lc_od_dis"></td><td><input type="text" id="lc_od_mat"></td></tr>
+                <tr><td class="label-col">OI</td><td><input type="text" id="lc_oi_poder"></td><td><input type="text" id="lc_oi_cb"></td><td><input type="text" id="lc_oi_dia"></td><td><input type="text" id="lc_oi_add"></td><td><input type="text" id="lc_oi_dis"></td><td><input type="text" id="lc_oi_mat"></td></tr>
+            </table>
+
+            <!-- EXÁMENES ADICIONALES -->
+            <h5 class="text-primary mt-3 mb-3">Exámenes Adicionales</h5>
+            <div class="row">
+                <div class="col-md-6">
+                    <table class="exam-table">
+                        <tr><th colspan="5">HIRSCHBERG</th></tr>
+                        <tr><th></th><th>0</th><th>15</th><th>30</th><th>45</th></tr>
+                        <tr><td class="label-col">OD</td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td></tr>
+                        <tr><td class="label-col">OI</td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td></tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <table class="exam-table">
+                        <tr><th colspan="5">CAMPIMETRÍA POR CONFRONTACIÓN</th></tr>
+                        <tr><th></th><th>T100</th><th>N60</th><th>S60</th><th>I70</th></tr>
+                        <tr><td class="label-col">OD</td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td></tr>
+                        <tr><td class="label-col">OI</td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td></tr>
+                    </table>
+                </div>
+            </div>
+            <table class="exam-table mt-3">
+                <tr>
+                    <th>OJO</th>
+                    <th>COVER TESTS</th>
+                    <th>FORIA</th>
+                    <th>TROPIA</th>
+                    <th>MAG DESVIACION</th>
+                    <th>MOV OCULARES</th>
+                </tr>
+                <tr>
+                    <td class="label-col">OD</td>
+                    <td><input type="text"></td>
+                    <td><input type="text"></td>
+                    <td><input type="text"></td>
+                    <td><input type="text"></td>
+                    <td><input type="text"></td>
+                </tr>
+                <tr>
+                    <td class="label-col">OI</td>
+                    <td><input type="text"></td>
+                    <td><input type="text"></td>
+                    <td><input type="text"></td>
+                    <td><input type="text"></td>
+                    <td><input type="text"></td>
+                </tr>
+            </table>
+            <table class="exam-table mt-3">
+                <tr><th></th><th>PPC</th><th>OR</th><th>LUZ +FR</th><th>TÉCNICA</th><th>CICLOS</th><th>KAPPA</th><th>DISTANCIA</th><th>ARP</th><th>ARN</th><th>RFP</th><th>RFN</th></tr>
+                <tr><td class="label-col">OD</td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td></tr>
+                <tr><td class="label-col">OI</td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td></tr>
+            </table>
+            <div class="row mt-3">
+                <div class="col-md-4">
+                    <table class="exam-table"><tr><th colspan="2">LUCES DE WORTH</th></tr><tr><td class="label-col">LEJOS</td><td><input type="text" id="worth_lejos"></td></tr><tr><td class="label-col">CERCA</td><td><input type="text" id="worth_cerca"></td></tr></table>
+                </div>
+                <div class="col-md-4">
+                    <table class="exam-table"><tr><th colspan="2">TEST ISHIHARA</th></tr><tr><td class="label-col">OD</td><td><input type="text" id="ishi_od"></td></tr><tr><td class="label-col">OI</td><td><input type="text" id="ishi_oi"></td></tr></table>
+                </div>
+                <div class="col-md-4">
+                    <table class="exam-table"><tr><th colspan="2">PRESIÓN INTRAOCULAR</th></tr><tr><td class="label-col">OD</td><td><input type="text" id="pio_od"></td></tr><tr><td class="label-col">OI</td><td><input type="text" id="pio_oi"></td></tr></table>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONCLUSIÓN / CAMPOS PARA CERTIFICADO -->
+        <div class="form-section">
+            <h4 class="section-title"><i class="fas fa-diagnoses me-2"></i>Conclusión</h4>
+            <p class="small-note mb-3">
+                <strong>Nota:</strong> En el certificado aparecerán <em>Impresión diagnóstica</em>, <em>Observación</em>, <em>Tratamiento</em>, <em>Nombre del examinador</em> y <em>Conformidad del evaluado</em>.
+            </p>
+            <div class="form-row">
+                <label for="impresionDiagnostica" class="form-label">Impresión diagnóstica:</label>
+                <textarea class="form-control" id="impresionDiagnostica" rows="2" placeholder="Ej.: Miopía moderada OU, astigmatismo compuesto..."></textarea>
+            </div>
+            <div class="form-row">
+                <label for="observacion" class="form-label">Observación:</label>
+                <textarea class="form-control" id="observacion" rows="2"></textarea>
+            </div>
+            <div class="form-row">
+                <label for="tratamiento" class="form-label">Tratamiento / Indicaciones:</label>
+                <textarea class="form-control" id="tratamiento" rows="2"></textarea>
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <label class="form-label">Nombre del Examinador:</label>
+                    <input type="text" class="form-control" id="nombre_examinador" placeholder="Dr(a). Nombre Apellido">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Conformidad del Evaluado:</label>
+                    <input type="text" class="form-control" id="conformidad_evaluado" placeholder="Ej.: El evaluado declara conformidad con la evaluación realizada.">
+                </div>
+            </div>
+        </div>
+
+        <!-- BOTONES -->
+        <div class="btn-group-custom">
+            <div class="d-flex justify-content-between">
+                <div>
+                    <a href="{% url 'medical:dashboard_medico' %}" class="btn btn-outline-secondary me-2">
+                        <i class="fas fa-arrow-left me-2"></i>Volver al Dashboard
+                    </a>
+                    <button type="button" class="btn btn-outline-info me-2" onclick="imprimirFicha()">
+                        <i class="fas fa-print me-2"></i>Imprimir Ficha
+                    </button>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-outline-warning me-2" onclick="guardarBorrador()">
+                        <i class="fas fa-save me-2"></i>Guardar Borrador
+                    </button>
+                    <button type="submit" id="btnGuardar" class="btn btn-success">
+                        <i class="fas fa-check me-2"></i>Guardar Ficha Clínica
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- MODAL ÉXITO -->
+<div class="modal fade" id="fichaGuardadaModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-check-circle text-success me-2"></i>Ficha clínica guardada</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        La ficha clínica se guardó correctamente. Puedes ir al historial o abrir el detalle ahora mismo.
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="btnVerHistorial" class="btn btn-secondary">
+          <i class="fas fa-list me-2"></i>Ver Historial
+        </button>
+        <button type="button" id="btnVerDetalle" class="btn btn-primary">
+          <i class="fas fa-eye me-2"></i>Ver esta Ficha
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// URLs generadas por Jinja (evitamos hardcodear rutas)
+// -> Usamos el blueprint real: medical
+const URL_CONSULTAS = "{% url 'medical:consultas' %}";
+const URL_DETALLE_TEMPLATE = "{% url 'medical:ver_consulta' consulta_id=0 %}".replace('/0', '/__ID__');
+
+let tomSelectInstance;
+let pacientesMap = new Map();
+
+document.addEventListener('DOMContentLoaded', function() {
+    cargarPacientesMedicos();
+    generarNumeroConsulta();
+    setFechaActual();
+
+    // Si viene por URL, preselecciona paciente
+    const params = new URLSearchParams(window.location.search);
+    const pid = params.get('paciente_id') || params.get('paciente_medico_id');
+    if (pid && tomSelectInstance) {
+        tomSelectInstance.setValue(String(pid));
+        tomSelectInstance.disable();
+    }
+});
+
+function setFechaActual() {
+    const ahora = new Date();
+    const fechaLocal = new Date(ahora.getTime() - ahora.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    document.getElementById('fechaConsulta').value = fechaLocal;
+}
+
+// Número de consulta corto (≤20): CONS-YYMMDD-XXXX
+function generarNumeroConsulta() {
+    const d = new Date();
+    const y = String(d.getFullYear()).slice(-2);
+    const m = String(d.getMonth() + 1).padStart(2,'0');
+    const day = String(d.getDate()).padStart(2,'0');
+    const rand = Math.floor(1000 + Math.random()*9000);
+    const num = `CONS-${y}${m}${day}-${rand}`;
+    document.getElementById('numeroConsulta').value = num;
+}
+
+async function cargarPacientesMedicos() {
+    try {
+        const response = await fetch('/api/pacientes-medicos');
+        if (!response.ok) throw new Error('Error al cargar pacientes');
+        const payload = await response.json();
+        const lista = Array.isArray(payload?.data) ? payload.data
+                    : Array.isArray(payload) ? payload
+                    : [];
+
+        const opciones = lista.map(p => {
+            const c = p.cliente || {};
+            const nombre = `${c.nombres || ''} ${c.ap_pat || ''} ${c.ap_mat || ''}`.replace(/\s+/g,' ').trim();
+            const doc = c.rut || c.cedula || c.ci || 'N/A';
+            pacientesMap.set(String(p.paciente_medico_id), p);
+            return { value: String(p.paciente_medico_id), text: `${nombre || '(Sin nombre)'} — Doc: ${doc}` };
+        });
+
+        const selectInput = document.getElementById('pacienteMedicoId');
+        tomSelectInstance = new TomSelect(selectInput, {
+            create: false,
+            sortField: { field: "text", direction: "asc" },
+            options: opciones,
+            onChange: handlePatientSelection,
+            placeholder: 'Buscar...'
+        });
+
+        const params = new URLSearchParams(window.location.search);
+        const pid = params.get('paciente_id') || params.get('paciente_medico_id');
+        if (pid) {
+            tomSelectInstance.setValue(String(pid));
+            tomSelectInstance.disable();
+        }
+    } catch (error) {
+        console.error('Error al cargar pacientes:', error);
+        mostrarAlerta('No se pudieron cargar los pacientes.', 'danger');
+    }
+}
+
+function handlePatientSelection(value) {
+    const infoDiv = document.getElementById('selectedPatientInfo');
+    if (value) {
+        const p = pacientesMap.get(String(value));
+        if (p && p.cliente) {
+            const nombre = `${p.cliente.nombres || ''} ${p.cliente.ap_pat || ''} ${p.cliente.ap_mat || ''}`.replace(/\s+/g,' ').trim();
+            const doc = p.cliente.rut || p.cliente.cedula || p.cliente.ci || 'N/A';
+            document.getElementById('infoPatientName').textContent = nombre || '(Sin nombre)';
+            document.getElementById('infoPatientDoc').textContent  = doc;
+            infoDiv.style.display = 'block';
+        }
+    } else {
+        infoDiv.style.display = 'none';
+    }
+}
+
+// Guardado
+document.getElementById('fichaClinicaForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const btn = document.getElementById('btnGuardar');
+    btn.disabled = true;
+
+    const pacienteId = tomSelectInstance?.getValue();
+    const numero = document.getElementById('numeroConsulta').value?.trim();
+    const fecha  = document.getElementById('fechaConsulta').value?.trim();
+    const motivo = document.getElementById('motivoConsulta').value?.trim();
+
+    if (!pacienteId || !numero || !fecha || !motivo) {
+        mostrarAlerta('Complete los campos obligatorios y seleccione un paciente.', 'danger');
+        btn.disabled = false;
+        return;
+    }
+
+    const fichaData = {
+        paciente_medico_id: parseInt(pacienteId,10),
+        numero_consulta: numero,
+        fecha_consulta: fecha,
+        motivo_consulta: motivo,
+
+        // Conclusión (CERTIFICADO)
+        impresion_diagnostica: document.getElementById('impresionDiagnostica').value?.trim() || null,
+        observacion: document.getElementById('observacion').value?.trim() || null,
+        tratamiento: document.getElementById('tratamiento').value?.trim() || null,
+        nombre_examinador: document.getElementById('nombre_examinador').value?.trim() || null,
+        conformidad_evaluado: document.getElementById('conformidad_evaluado').value?.trim() || null
+    };
+
+    try {
+        const response = await fetch('/api/fichas-clinicas', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(fichaData)
+        });
+
+        const result = await response.json().catch(()=>({}));
+        if (response.ok) {
+            const fichaId = String(result.id || result.ficha_id || result.consulta_id || '');
+            if (fichaId) sessionStorage.setItem('ultima_ficha_id', fichaId);
+
+            const urlHistorial = URL_CONSULTAS;
+            const urlDetalle = fichaId ? URL_DETALLE_TEMPLATE.replace('__ID__', encodeURIComponent(fichaId)) : null;
+
+            const modalEl = document.getElementById('fichaGuardadaModal');
+            const modal = new bootstrap.Modal(modalEl);
+            const btnHist = document.getElementById('btnVerHistorial');
+            const btnDetalle = document.getElementById('btnVerDetalle');
+
+            btnHist.onclick = () => { window.location.href = urlHistorial; };
+            btnDetalle.onclick = () => {
+                if (urlDetalle) {
+                    window.location.href = urlDetalle;
+                } else {
+                    window.location.href = urlHistorial;
+                }
+            };
+
+            modal.show();
+
+            setTimeout(() => {
+                window.location.href = urlHistorial;
+            }, 1500);
+
+        } else {
+            mostrarAlerta(`Error al guardar: ${result.error || result.message || 'Error desconocido'}`, 'danger');
+            btn.disabled = false;
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        mostrarAlerta('Error de conexión al guardar la ficha clínica.', 'danger');
+        btn.disabled = false;
+    }
+});
+
+// Acciones
+function imprimirFicha(){ mostrarAlerta('Impresión de ficha en desarrollo.', 'info'); }
+function generarCertificado(){
+    mostrarAlerta('Para imprimir el certificado, entra al detalle desde el Historial.', 'info');
+}
+function guardarBorrador(){ mostrarAlerta('Guardado de borrador en desarrollo.', 'info'); }
+
+function mostrarAlerta(mensaje, tipo='info'){
+    const cont = document.querySelector('.container');
+    const alertaHTML = `
+        <div class="alert alert-${tipo} alert-dismissible fade show mt-2" role="alert">
+            ${mensaje}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>`;
+    cont.insertAdjacentHTML('afterbegin', alertaHTML);
+    setTimeout(() => {
+        const a = cont.querySelector('.alert');
+        if (a) a.remove();
+    }, 5000);
+}
+</script>
+{% endblock %}
+
+

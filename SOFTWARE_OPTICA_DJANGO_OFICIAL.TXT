@@ -1,0 +1,4 @@
+ESTE ES EL SOFTWARE OFTALMETRYC OFICIAL QUE ESTAMOS CONSTRUYENDO OFICIALMENTE...
+
+
+la base de datos en local en postgres para este proyecto se llama: optica_db_django
