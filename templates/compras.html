@@ -424,6 +424,8 @@
                 <input type="hidden" name="detalle_nuevo_diametro_1[]" class="hidden-nuevo nuevo-diametro1" value="">
                 <input type="hidden" name="detalle_nuevo_diametro_2[]" class="hidden-nuevo nuevo-diametro2" value="">
                 <input type="hidden" name="detalle_nuevo_color[]" class="hidden-nuevo nuevo-color" value="">
+                <input type="hidden" name="detalle_nuevo_cantidad[]" class="hidden-nuevo nuevo-cantidad" value="">
+                <input type="hidden" name="detalle_nuevo_costo_unitario[]" class="hidden-nuevo nuevo-costo-unitario" value="">
             </td>
             <td><input type="text" name="detalle_marca[]" class="form-control detalle-marca" placeholder="Marca"></td>
             <td><input type="text" name="detalle_codigo[]" class="form-control detalle-codigo" placeholder="Código"></td>
@@ -606,6 +608,8 @@
         row.querySelector('.nuevo-diametro1').value = data.diametro1;
         row.querySelector('.nuevo-diametro2').value = data.diametro2;
         row.querySelector('.nuevo-color').value = data.color;
+        row.querySelector('.nuevo-cantidad').value = data.cantidad;
+        row.querySelector('.nuevo-costo-unitario').value = data.costoUnitario;
         row.querySelector('.detalle-descripcion').value = data.descripcion;
 
         const marcaInput = row.querySelector('.detalle-marca');
@@ -628,6 +632,15 @@
         if (costoIva) costoIva.value = '';
         
         if (modalProductoInstance) modalProductoInstance.hide();
+        
+        // Debug: verificar datos guardados
+        console.log('✅ Producto nuevo agregado:', {
+            tipo: row.querySelector('.input-tipo-producto').value,
+            nombre: row.querySelector('.nuevo-nombre').value,
+            rubro: row.querySelector('.nuevo-rubro').value,
+            cantidad: row.querySelector('.nuevo-cantidad').value,
+            costoUnitario: row.querySelector('.nuevo-costo-unitario').value
+        });
         
         alert(`Producto "${data.nombre}" agregado al detalle de compra.`);
     }
@@ -658,6 +671,21 @@
         const btnNuevo = document.getElementById('btnGuardarProductoNuevo');
         if (btnNuevo) {
             btnNuevo.addEventListener('click', registrarProductoNuevo);
+        }
+        
+        // Debug: verificar datos enviados al backend
+        const form = document.querySelector('form[method="post"]');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                console.log('🚀 Enviando formulario...');
+                const formData = new FormData(this);
+                console.log('📋 Datos del detalle:');
+                for (let [key, value] of formData.entries()) {
+                    if (key.includes('detalle_') && value) {
+                        console.log(`  ${key}: ${value}`);
+                    }
+                }
+            });
         }
     });
 </script>
