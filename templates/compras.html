@@ -521,4 +521,127 @@
         if (btnNuevo) btnNuevo.addEventListener('click', registrarProductoNuevo);
     });
 </script>
+
+<!-- Modal Producto Nuevo -->
+<div class="modal fade" id="modalProductoNuevo" tabindex="-1" aria-labelledby="modalProductoNuevoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); color: white;">
+                <h5 class="modal-title" id="modalProductoNuevoLabel">
+                    <i class="fas fa-boxes me-2"></i>Crear Producto Nuevo
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formProductoNuevo">
+                    <div class="row g-3">
+                        <!-- Columna izquierda -->
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-header bg-light">
+                                    <strong>Información básica</strong>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="form-label">Nombre del producto <span class="text-danger">*</span></label>
+                                        <input type="text" id="nuevoNombre" class="form-control" placeholder="Ej: Lente oftálmico progresivo" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Rubro <span class="text-danger">*</span></label>
+                                        <input type="text" id="nuevoRubro" class="form-control" placeholder="Ej: Armazones, Lentes, Accesorios" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Marca</label>
+                                        <input type="text" id="nuevoMarca" class="form-control" placeholder="Ej: Ray-Ban, Oakley">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Material</label>
+                                        <input type="text" id="nuevoMaterial" class="form-control" placeholder="Ej: Acetato, Metal, Titanio">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Tipo armazón</label>
+                                        <input type="text" id="nuevoTipoArmazon" class="form-control" placeholder="Ej: Completo, Semi al aire">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Columna derecha -->
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-header bg-light">
+                                    <strong>Especificaciones</strong>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="form-label">Código</label>
+                                        <input type="text" id="nuevoCodigo" class="form-control" placeholder="Código interno o del proveedor">
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label">Diámetro</label>
+                                            <input type="text" id="nuevoDiametro" class="form-control" placeholder="mm">
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label">Puente</label>
+                                            <input type="text" id="nuevoPuente" class="form-control" placeholder="mm">
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label class="form-label">Varilla</label>
+                                            <input type="text" id="nuevoVarilla" class="form-control" placeholder="mm">
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Color</label>
+                                        <input type="text" id="nuevoColor" class="form-control" placeholder="Ej: Negro mate, Azul translúcido">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Costo unitario <span class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">$</span>
+                                            <input type="number" id="nuevoCostoUnitario" class="form-control" step="0.01" min="0" value="0" required>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Costo con IVA (15%)</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">$</span>
+                                            <input type="number" id="nuevoCostoConIva" class="form-control" step="0.01" readonly>
+                                        </div>
+                                        <small class="text-muted">Se calcula automáticamente</small>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Cantidad a comprar <span class="text-danger">*</span></label>
+                                        <input type="number" id="nuevoCantidad" class="form-control" min="1" step="1" value="1" required>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Descripción completa -->
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header bg-light">
+                                    <strong>Descripción adicional</strong>
+                                </div>
+                                <div class="card-body">
+                                    <textarea id="nuevoDescripcion" class="form-control" rows="3" placeholder="Descripción detallada del producto, características especiales, etc."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cancelar
+                </button>
+                <button type="button" class="btn btn-primary" id="btnGuardarProductoNuevo">
+                    <i class="fas fa-check me-1"></i>Guardar y Agregar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
