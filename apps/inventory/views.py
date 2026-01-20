@@ -403,6 +403,27 @@ def compras(request):
             if not detalles:
                 messages.error(request, "Agrega al menos un detalle de producto.")
             else:
+                # Calcular el total antes de validar el abono
+                total_temp = sum(
+                    Decimal(det.get("cantidad", 0)) * Decimal(det.get("precio_unitario", 0)) * 
+                    (Decimal(1) + Decimal(det.get("tarifa_iva", 0)))
+                    for det in detalles
+                )
+                abono = header.get("abono") or Decimal(0)
+                
+                # Validar que el abono no sea mayor al total
+                if abono > total_temp:
+                    messages.error(request, f"El abono (${abono:.2f}) no puede ser mayor al total (${total_temp:.2f}).")
+                    return render(
+                        request,
+                        "compras.html",
+                        {
+                            "proveedores": proveedores,
+                            "productos": productos,
+                            "compras": compras_list,
+                        },
+                    )
+                
                 proveedor_obj = None
                 if header.get("proveedor_id"):
                     proveedor_obj = Proveedor.objects.filter(proveedor_id=header["proveedor_id"]).first()
@@ -424,7 +445,7 @@ def compras(request):
                         "diametro_1": nuevo_payload.get("diametro_1"),
                         "diametro_2": nuevo_payload.get("diametro_2"),
                         "color": nuevo_payload["color"],
-                        "cantidad": int(det["cantidad"]),
+                        "cantidad": 0,  # Se crea con 0, la compra sumará la cantidad
                         "costo_unitario": det["precio_unitario"],
                         "descripcion": det.get("descripcion"),
                         "estado": True,

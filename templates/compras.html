@@ -411,7 +411,13 @@
                     <select name="detalle_producto_id[]" class="form-select detalle-producto" required>
                         <option value="">Seleccione</option>
                         {% for p in productos %}
-                        <option value="{{ p.producto_id }}" data-marca="{{ p.marca|default_if_none:'' }}" data-codigo="{{ p.codigo|default_if_none:'' }}">{{ p.nombre }} ({{ p.codigo|default:'N/A' }})</option>
+                        <option value="{{ p.producto_id }}" 
+                                data-marca="{{ p.marca|default_if_none:'' }}" 
+                                data-codigo="{{ p.codigo|default_if_none:'' }}"
+                                data-costo="{{ p.costo_unitario|default:'0' }}"
+                                data-descripcion="{{ p.descripcion|default_if_none:'' }}">
+                            {{ p.nombre }} ({{ p.codigo|default:'N/A' }})
+                        </option>
                         {% endfor %}
                     </select>
                     <span class="badge bg-secondary badge-producto">Producto existente</span>
@@ -482,6 +488,8 @@
         const select = row.querySelector('.detalle-producto');
         const marcaInput = row.querySelector('.detalle-marca');
         const codigoInput = row.querySelector('.detalle-codigo');
+        const precioInput = row.querySelector('.detalle-precio');
+        const descripcionInput = row.querySelector('.detalle-descripcion');
         const tipoInput = row.querySelector('.input-tipo-producto');
         const badge = row.querySelector('.badge-producto');
 
@@ -492,10 +500,13 @@
             const opt = select.selectedOptions[0];
             if (marcaInput) marcaInput.value = opt.dataset.marca || '';
             if (codigoInput) codigoInput.value = opt.dataset.codigo || '';
+            if (precioInput && opt.dataset.costo) precioInput.value = parseFloat(opt.dataset.costo).toFixed(2);
+            if (descripcionInput) descripcionInput.value = opt.dataset.descripcion || '';
             if (badge) {
                 badge.textContent = 'Producto existente';
                 badge.className = 'badge bg-secondary badge-producto';
             }
+            recalcular();
         } else if (badge) {
             badge.textContent = 'Producto sin seleccionar';
             badge.className = 'badge bg-warning text-dark badge-producto';
