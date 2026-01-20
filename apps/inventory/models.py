@@ -7,6 +7,7 @@ class Product(models.Model):
     nombre = models.CharField(max_length=200)
     distribuidor = models.CharField(max_length=200, blank=True, null=True)
     marca = models.CharField(max_length=100, blank=True, null=True)
+    rubro = models.CharField(max_length=100, blank=True, null=True)
     material = models.CharField(max_length=100, blank=True, null=True)
     tipo_armazon = models.CharField(max_length=100, blank=True, null=True)
     codigo = models.CharField(max_length=50, blank=True, null=True)

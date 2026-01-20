@@ -22,6 +22,12 @@
         border-radius: 10px;
         padding: 1rem;
     }
+    .badge-producto {
+        width: fit-content;
+    }
+    .badge-proveedor {
+        font-size: 0.75rem;
+    }
 </style>
 {% endblock %}
 
@@ -50,6 +56,19 @@
     <form method="post">
         {% csrf_token %}
         <div class="card mb-4">
+            <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                <div>
+                    <strong>Producto nuevo</strong>
+                    <p class="mb-0 text-muted">Registra un producto idéntico al módulo Productos y agréguelo directamente a la orden.</p>
+                </div>
+                <div class="d-flex flex-column flex-md-row gap-2">
+                    <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalProductoNuevo">
+                        <i class="fas fa-box-open me-1"></i> Registrar producto nuevo
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="card mb-4">
             <div class="card-header">
                 <strong>Datos de la compra</strong>
             </div>
@@ -57,20 +76,20 @@
                 <div class="row g-3">
                     <div class="col-md-4">
                         <label class="form-label">Proveedor</label>
-                        <select name="proveedor_id" class="form-select" required>
+                        <select name="proveedor_id" class="form-select" id="select-proveedor" required>
                             <option value="">Seleccione</option>
                             {% for prov in proveedores %}
-                            <option value="{{ prov.proveedor_id }}">{{ prov.razon_social }}</option>
+                            <option value="{{ prov.proveedor_id }}" data-ruc="{{ prov.rut }}">{{ prov.razon_social }}</option>
                             {% endfor %}
                         </select>
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label">N° Factura</label>
+                        <label class="form-label">N.º Factura</label>
                         <input type="text" name="numero_factura" class="form-control" placeholder="001-001-000000000">
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">RUC / C.I.</label>
-                        <input type="text" name="ruc_ci" class="form-control">
+                        <input type="text" name="ruc_ci" id="input-ruc-ci" class="form-control">
                     </div>
                     <div class="col-md-3">
                         <label class="form-label">Fecha pedido</label>
@@ -82,11 +101,23 @@
                     </div>
                     <div class="col-md-3">
                         <label class="form-label">Forma de pago</label>
-                        <input type="text" name="forma_pago" class="form-control" placeholder="Efectivo / Tarjeta / Crédito">
+                        <select name="forma_pago" class="form-select">
+                            <option value="">Seleccione</option>
+                            <option value="Efectivo">Efectivo</option>
+                            <option value="Transferencia">Transferencia</option>
+                            <option value="Tarjeta de débito">Tarjeta de débito</option>
+                            <option value="Tarjeta de crédito">Tarjeta de crédito</option>
+                        </select>
                     </div>
                     <div class="col-md-3">
                         <label class="form-label">Plazo</label>
-                        <input type="text" name="plazo_pago" class="form-control" placeholder="3 meses / Contado">
+                        <select name="plazo_pago" class="form-select">
+                            <option value="Un solo pago">Un solo pago</option>
+                            <option value="3 meses">3 meses</option>
+                            <option value="6 meses">6 meses</option>
+                            <option value="9 meses">9 meses</option>
+                            <option value="Más de 10 meses">Más de 10 meses</option>
+                        </select>
                     </div>
                     <div class="col-md-12">
                         <label class="form-label">Notas</label>
@@ -99,16 +130,21 @@
         <div class="card mb-4">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <strong>Detalle de compra</strong>
-                <button type="button" class="btn btn-sm btn-primary" onclick="agregarLinea()">
-                    <i class="fas fa-plus me-1"></i>Agregar
-                </button>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalProductoNuevo">
+                        <i class="fas fa-box-open me-1"></i> Producto nuevo
+                    </button>
+                    <button type="button" class="btn btn-sm btn-primary" onclick="agregarLinea()">
+                        <i class="fas fa-plus me-1"></i>Agregar fila
+                    </button>
+                </div>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table mb-0 align-middle" id="tabla-detalles">
                         <thead>
                             <tr>
-                                <th style="min-width: 180px;">Producto</th>
+                                <th style="min-width: 220px;">Producto</th>
                                 <th>Marca</th>
                                 <th>Código</th>
                                 <th style="width: 80px;">Cant.</th>
@@ -208,7 +244,7 @@
     </form>
 
     <div class="card">
-        <div class="card-header"><strong>Compras recientes</strong></div>
+        <div class="card-header"><strong>Compras recientes / Órdenes realizadas</strong></div>
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table mb-0 table-hover">
@@ -249,21 +285,38 @@
 
 {% block extra_js %}
 <script>
+    const modalProducto = document.getElementById('modalProductoNuevo');
+    const modalProductoInstance = modalProducto ? new bootstrap.Modal(modalProducto) : null;
+    const formProductoNuevo = document.getElementById('formProductoNuevo');
 
-    function agregarLinea() {
-        const tbody = document.querySelector('#tabla-detalles tbody');
+    function crearFilaDetalle() {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>
-                <select name="detalle_producto_id[]" class="form-select detalle-producto" required>
-                    <option value="">Seleccione</option>
-                    {% for p in productos %}
-                    <option value="{{ p.producto_id }}" data-marca="{{ p.marca|default_if_none:'' }}" data-codigo="{{ p.codigo|default_if_none:'' }}">{{ p.nombre }} ({{ p.codigo|default:'N/A' }})</option>
-                    {% endfor %}
-                </select>
+                <div class="d-flex flex-column gap-1">
+                    <select name="detalle_producto_id[]" class="form-select detalle-producto" required>
+                        <option value="">Seleccione</option>
+                        {% for p in productos %}
+                        <option value="{{ p.producto_id }}" data-marca="{{ p.marca|default_if_none:'' }}" data-codigo="{{ p.codigo|default_if_none:'' }}">{{ p.nombre }} ({{ p.codigo|default:'N/A' }})</option>
+                        {% endfor %}
+                    </select>
+                    <span class="badge bg-secondary badge-producto">Producto existente</span>
+                </div>
+                <input type="hidden" name="detalle_tipo[]" class="input-tipo-producto" value="existente">
+                <input type="hidden" name="detalle_descripcion[]" class="detalle-descripcion" value="">
+                <input type="hidden" name="detalle_nuevo_nombre[]" class="hidden-nuevo nuevo-nombre" value="">
+                <input type="hidden" name="detalle_nuevo_distribuidor[]" class="hidden-nuevo nuevo-distribuidor" value="">
+                <input type="hidden" name="detalle_nuevo_rubro[]" class="hidden-nuevo nuevo-rubro" value="">
+                <input type="hidden" name="detalle_nuevo_marca[]" class="hidden-nuevo nuevo-marca" value="">
+                <input type="hidden" name="detalle_nuevo_material[]" class="hidden-nuevo nuevo-material" value="">
+                <input type="hidden" name="detalle_nuevo_tipo_armazon[]" class="hidden-nuevo nuevo-tipo-armazon" value="">
+                <input type="hidden" name="detalle_nuevo_codigo[]" class="hidden-nuevo nuevo-codigo" value="">
+                <input type="hidden" name="detalle_nuevo_diametro_1[]" class="hidden-nuevo nuevo-diametro1" value="">
+                <input type="hidden" name="detalle_nuevo_diametro_2[]" class="hidden-nuevo nuevo-diametro2" value="">
+                <input type="hidden" name="detalle_nuevo_color[]" class="hidden-nuevo nuevo-color" value="">
             </td>
-            <td><input type="text" name="detalle_marca[]" class="form-control" placeholder="Marca"></td>
-            <td><input type="text" name="detalle_codigo[]" class="form-control" placeholder="Código"></td>
+            <td><input type="text" name="detalle_marca[]" class="form-control detalle-marca" placeholder="Marca"></td>
+            <td><input type="text" name="detalle_codigo[]" class="form-control detalle-codigo" placeholder="Código"></td>
             <td><input type="number" min="1" step="1" name="detalle_cantidad[]" class="form-control detalle-cantidad" value="1"></td>
             <td><input type="number" min="0" step="0.01" name="detalle_precio_unitario[]" class="form-control detalle-precio" value="0"></td>
             <td>
@@ -277,7 +330,61 @@
             <td class="text-end fw-bold total-linea">0.00</td>
             <td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger" onclick="eliminarLinea(this)"><i class="fas fa-times"></i></button></td>
         `;
+        return row;
+    }
+
+    function agregarLinea() {
+        const tbody = document.querySelector('#tabla-detalles tbody');
+        const row = crearFilaDetalle();
         tbody.appendChild(row);
+        inicializarEventosFila(row);
+        recalcular();
+    }
+
+    function inicializarEventosFila(row) {
+        const selectProd = row.querySelector('.detalle-producto');
+        if (selectProd) {
+            selectProd.addEventListener('change', () => actualizarDatosProducto(row));
+        }
+        row.querySelectorAll('.detalle-cantidad, .detalle-precio, .detalle-descuento, .detalle-tarifa').forEach(inp => {
+            inp.addEventListener('input', recalcular);
+        });
+    }
+
+    function limpiarDatosNuevo(row) {
+        row.querySelectorAll('.hidden-nuevo').forEach(input => input.value = '');
+        row.querySelector('.detalle-descripcion').value = '';
+        const badge = row.querySelector('.badge-producto');
+        if (badge) {
+            badge.textContent = 'Producto existente';
+            badge.className = 'badge bg-secondary badge-producto';
+        }
+        const select = row.querySelector('.detalle-producto');
+        if (select) select.disabled = false;
+    }
+
+    function actualizarDatosProducto(row) {
+        const select = row.querySelector('.detalle-producto');
+        const marcaInput = row.querySelector('.detalle-marca');
+        const codigoInput = row.querySelector('.detalle-codigo');
+        const tipoInput = row.querySelector('.input-tipo-producto');
+        const badge = row.querySelector('.badge-producto');
+
+        limpiarDatosNuevo(row);
+        if (tipoInput) tipoInput.value = 'existente';
+
+        if (select && select.value) {
+            const opt = select.selectedOptions[0];
+            if (marcaInput) marcaInput.value = opt.dataset.marca || '';
+            if (codigoInput) codigoInput.value = opt.dataset.codigo || '';
+            if (badge) {
+                badge.textContent = 'Producto existente';
+                badge.className = 'badge bg-secondary badge-producto';
+            }
+        } else if (badge) {
+            badge.textContent = 'Producto sin seleccionar';
+            badge.className = 'badge bg-warning text-dark badge-producto';
+        }
         recalcular();
     }
 
@@ -321,13 +428,110 @@
         document.getElementById('saldo').textContent = (totalPagar - abono).toFixed(2);
     }
 
+    function actualizarCostoConIva() {
+        if (!formProductoNuevo) return;
+        const base = parseFloat(formProductoNuevo.querySelector('#nuevoCostoUnitario')?.value || '0');
+        const costoIva = formProductoNuevo.querySelector('#nuevoCostoConIva');
+        if (costoIva) costoIva.value = base > 0 ? (base * 1.15).toFixed(2) : '';
+    }
+
+    function autocompletarRuc() {
+        const select = document.getElementById('select-proveedor');
+        const rucInput = document.getElementById('input-ruc-ci');
+        if (!select || !rucInput) return;
+        const opt = select.options[select.selectedIndex];
+        rucInput.value = opt ? (opt.getAttribute('data-ruc') || '') : '';
+    }
+
+    function registrarProductoNuevo() {
+        if (!formProductoNuevo) return;
+        const data = {
+            nombre: formProductoNuevo.querySelector('#nuevoNombre').value.trim(),
+            distribuidor: formProductoNuevo.querySelector('#nuevoDistribuidor').value.trim(),
+            rubro: formProductoNuevo.querySelector('#nuevoRubro').value.trim(),
+            marca: formProductoNuevo.querySelector('#nuevoMarca').value.trim(),
+            material: formProductoNuevo.querySelector('#nuevoMaterial').value.trim(),
+            tipoArmazon: formProductoNuevo.querySelector('#nuevoTipoArmazon').value.trim(),
+            codigo: formProductoNuevo.querySelector('#nuevoCodigo').value.trim(),
+            color: formProductoNuevo.querySelector('#nuevoColor').value.trim(),
+            diametro1: formProductoNuevo.querySelector('#nuevoDiametro1').value.trim(),
+            diametro2: formProductoNuevo.querySelector('#nuevoDiametro2').value.trim(),
+            cantidad: parseFloat(formProductoNuevo.querySelector('#nuevoCantidad').value || '0'),
+            costoUnitario: parseFloat(formProductoNuevo.querySelector('#nuevoCostoUnitario').value || '0'),
+            descripcion: formProductoNuevo.querySelector('#nuevoDescripcion').value.trim(),
+        };
+
+        if (!data.nombre || !data.rubro) {
+            alert('Ingresa al menos el nombre y el rubro del producto.');
+            return;
+        }
+        if (data.cantidad <= 0 || data.costoUnitario <= 0) {
+            alert('La cantidad y el costo unitario deben ser mayores a cero.');
+            return;
+        }
+
+        const row = crearFilaDetalle();
+        const select = row.querySelector('.detalle-producto');
+        const tipoInput = row.querySelector('.input-tipo-producto');
+        const badge = row.querySelector('.badge-producto');
+
+        if (select) {
+            select.innerHTML = '<option value="">Producto nuevo registrado</option>';
+            select.disabled = true;
+        }
+        if (tipoInput) tipoInput.value = 'nuevo';
+        if (badge) {
+            badge.textContent = 'Producto nuevo';
+            badge.className = 'badge bg-success badge-producto';
+        }
+
+        row.querySelector('.nuevo-nombre').value = data.nombre;
+        row.querySelector('.nuevo-distribuidor').value = data.distribuidor;
+        row.querySelector('.nuevo-rubro').value = data.rubro;
+        row.querySelector('.nuevo-marca').value = data.marca;
+        row.querySelector('.nuevo-material').value = data.material;
+        row.querySelector('.nuevo-tipo-armazon').value = data.tipoArmazon;
+        row.querySelector('.nuevo-codigo').value = data.codigo;
+        row.querySelector('.nuevo-diametro1').value = data.diametro1;
+        row.querySelector('.nuevo-diametro2').value = data.diametro2;
+        row.querySelector('.nuevo-color').value = data.color;
+        row.querySelector('.detalle-descripcion').value = data.descripcion;
+
+        const marcaInput = row.querySelector('.detalle-marca');
+        const codigoInput = row.querySelector('.detalle-codigo');
+        const cantInput = row.querySelector('.detalle-cantidad');
+        const precioInput = row.querySelector('.detalle-precio');
+
+        if (marcaInput) marcaInput.value = data.marca;
+        if (codigoInput) codigoInput.value = data.codigo;
+        if (cantInput) cantInput.value = data.cantidad;
+        if (precioInput) precioInput.value = data.costoUnitario;
+
+        const tbody = document.querySelector('#tabla-detalles tbody');
+        tbody.appendChild(row);
+        inicializarEventosFila(row);
+        recalcular();
+
+        formProductoNuevo.reset();
+        actualizarCostoConIva();
+        if (modalProductoInstance) modalProductoInstance.hide();
+    }
+
     document.addEventListener('input', function(e) {
         if (e.target.closest('#tabla-detalles')) recalcular();
         if (e.target.name === 'abono') recalcular();
+        if (e.target.id === 'nuevoCostoUnitario') actualizarCostoConIva();
     });
 
     document.addEventListener('DOMContentLoaded', () => {
         agregarLinea();
+        autocompletarRuc();
+        const selectProv = document.getElementById('select-proveedor');
+        if (selectProv) {
+            selectProv.addEventListener('change', autocompletarRuc);
+        }
+        const btnNuevo = document.getElementById('btnGuardarProductoNuevo');
+        if (btnNuevo) btnNuevo.addEventListener('click', registrarProductoNuevo);
     });
 </script>
 {% endblock %}

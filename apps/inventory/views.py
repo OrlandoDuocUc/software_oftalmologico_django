@@ -312,7 +312,9 @@ def compras(request):
 
     proveedores = Proveedor.objects.filter(estado=True).order_by("razon_social")
     productos = list(product_service.list_products())
-    compras_list = purchase_service.list_purchases()
+    compras_list = list(purchase_service.list_purchases())
+    for compra in compras_list:
+        compra.iva_total_calculado = (compra.iva_15 or Decimal(0)) + (compra.iva_5 or Decimal(0))
 
     if request.method == "POST":
         try:
@@ -344,29 +346,99 @@ def compras(request):
             precios = request.POST.getlist("detalle_precio_unitario[]")
             tarifas = request.POST.getlist("detalle_tarifa_iva[]")
             descuentos = request.POST.getlist("detalle_descuento[]")
+            tipos = request.POST.getlist("detalle_tipo[]")
+            nuevos_nombres = request.POST.getlist("detalle_nuevo_nombre[]")
+            nuevos_distribuidores = request.POST.getlist("detalle_nuevo_distribuidor[]")
+            nuevos_rubros = request.POST.getlist("detalle_nuevo_rubro[]")
+            nuevos_marcas = request.POST.getlist("detalle_nuevo_marca[]")
+            nuevos_codigos = request.POST.getlist("detalle_nuevo_codigo[]")
+            nuevos_materiales = request.POST.getlist("detalle_nuevo_material[]")
+            nuevos_tipos_armazon = request.POST.getlist("detalle_nuevo_tipo_armazon[]")
+            nuevos_diametro_1 = request.POST.getlist("detalle_nuevo_diametro_1[]")
+            nuevos_diametro_2 = request.POST.getlist("detalle_nuevo_diametro_2[]")
+            nuevos_colores = request.POST.getlist("detalle_nuevo_color[]")
 
-            for idx, prod_id in enumerate(productos_ids):
-                if not prod_id:
-                    continue
+            filas_detalle = len(productos_ids)
+            for idx in range(filas_detalle):
+                tipo = tipos[idx] if idx < len(tipos) else "existente"
+                prod_id_raw = productos_ids[idx] if idx < len(productos_ids) else ""
                 cantidad = _clean_decimal(cantidades[idx] if idx < len(cantidades) else None)
                 if cantidad <= 0:
                     continue
-                detalles.append(
-                    {
-                        "producto_id": _clean_int(prod_id),
-                        "marca": marcas[idx] if idx < len(marcas) else "",
-                        "codigo": codigos[idx] if idx < len(codigos) else "",
-                        "descripcion": descripciones[idx] if idx < len(descripciones) else "",
-                        "cantidad": cantidad,
-                        "precio_unitario": _clean_decimal(precios[idx] if idx < len(precios) else None),
-                        "tarifa_iva": _clean_decimal(tarifas[idx] if idx < len(tarifas) else None),
-                        "descuento": _clean_decimal(descuentos[idx] if idx < len(descuentos) else None),
+
+                detalle = {
+                    "marca": marcas[idx] if idx < len(marcas) else "",
+                    "codigo": codigos[idx] if idx < len(codigos) else "",
+                    "descripcion": descripciones[idx] if idx < len(descripciones) else "",
+                    "cantidad": cantidad,
+                    "precio_unitario": _clean_decimal(precios[idx] if idx < len(precios) else None),
+                    "tarifa_iva": _clean_decimal(tarifas[idx] if idx < len(tarifas) else None),
+                    "descuento": _clean_decimal(descuentos[idx] if idx < len(descuentos) else None),
+                }
+
+                if tipo == "nuevo":
+                    nombre_nuevo = nuevos_nombres[idx].strip() if idx < len(nuevos_nombres) else ""
+                    rubro_nuevo = nuevos_rubros[idx].strip() if idx < len(nuevos_rubros) else ""
+                    if not nombre_nuevo or not rubro_nuevo:
+                        raise ValueError("Completa los datos del producto nuevo.")
+
+                    detalle["producto_id"] = None
+                    detalle["nuevo_producto"] = {
+                        "nombre": nombre_nuevo,
+                        "rubro": rubro_nuevo,
+                        "distribuidor": nuevos_distribuidores[idx].strip() if idx < len(nuevos_distribuidores) else "",
+                        "marca": nuevos_marcas[idx].strip() if idx < len(nuevos_marcas) else "",
+                        "codigo": nuevos_codigos[idx].strip() if idx < len(nuevos_codigos) else "",
+                        "material": nuevos_materiales[idx].strip() if idx < len(nuevos_materiales) else "",
+                        "tipo_armazon": nuevos_tipos_armazon[idx].strip() if idx < len(nuevos_tipos_armazon) else "",
+                        "diametro_1": nuevos_diametro_1[idx].strip() if idx < len(nuevos_diametro_1) else "",
+                        "diametro_2": nuevos_diametro_2[idx].strip() if idx < len(nuevos_diametro_2) else "",
+                        "color": nuevos_colores[idx].strip() if idx < len(nuevos_colores) else "",
                     }
-                )
+                else:
+                    if not prod_id_raw:
+                        continue
+                    detalle["producto_id"] = _clean_int(prod_id_raw)
+
+                detalles.append(detalle)
 
             if not detalles:
                 messages.error(request, "Agrega al menos un detalle de producto.")
             else:
+                proveedor_obj = None
+                if header.get("proveedor_id"):
+                    proveedor_obj = Proveedor.objects.filter(proveedor_id=header["proveedor_id"]).first()
+
+                for det in detalles:
+                    nuevo_payload = det.pop("nuevo_producto", None)
+                    if nuevo_payload is None:
+                        continue
+
+                    product_data = {
+                        "fecha": datetime.now(),
+                        "nombre": nuevo_payload["nombre"],
+                        "rubro": nuevo_payload["rubro"],
+                        "distribuidor": nuevo_payload.get("distribuidor") or (proveedor_obj.razon_social if proveedor_obj else None),
+                        "marca": nuevo_payload["marca"],
+                        "material": nuevo_payload["material"],
+                        "tipo_armazon": nuevo_payload["tipo_armazon"],
+                        "codigo": nuevo_payload["codigo"],
+                        "diametro_1": nuevo_payload.get("diametro_1"),
+                        "diametro_2": nuevo_payload.get("diametro_2"),
+                        "color": nuevo_payload["color"],
+                        "cantidad": int(det["cantidad"]),
+                        "costo_unitario": det["precio_unitario"],
+                        "descripcion": det.get("descripcion"),
+                        "estado": True,
+                    }
+                    nuevo_producto = product_service.create_product(product_data)
+                    det["producto_id"] = nuevo_producto.producto_id
+
+                    if not det.get("marca"):
+                        det["marca"] = nuevo_producto.marca or ""
+                    if not det.get("codigo"):
+                        det["codigo"] = nuevo_producto.codigo or ""
+
                 compra = purchase_service.create_purchase(header, detalles)
                 messages.success(request, f"Compra #{compra.compra_id} registrada correctamente.")
                 return redirect("product_html:compras")

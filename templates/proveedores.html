@@ -42,7 +42,7 @@
         <div class="d-flex gap-2">
             <div class="input-group" style="width: 300px;">
                 <input type="text" id="searchInput" class="form-control" 
-                       placeholder="Buscar por razón social, RUT, código..." 
+                       placeholder="Buscar por razón social, RUC, código..." 
                        value="{{ search_term|default:'' }}">
                 <button class="btn btn-outline-primary" type="button" onclick="buscarProveedores()">
                     <i class="fas fa-search"></i>
@@ -142,7 +142,7 @@
                         <tr>
                             <th>Código</th>
                             <th>Razón Social</th>
-                            <th>RUT</th>
+                            <th>RUC</th>
                             <th>Contacto</th>
                             <th>Representante</th>
                             <th>Condiciones</th>
@@ -276,7 +276,7 @@
                             <input type="text" class="form-control" id="razonSocial" name="razonSocial" required>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label">RUT *</label>
+                            <label class="form-label">RUC *</label>
                             <input type="text" class="form-control" id="rut" name="rut" required>
                         </div>
                     </div>
@@ -467,7 +467,7 @@
                                 <tr><td><strong>Código:</strong></td><td class="provider-code">${proveedor.codigo_proveedor}</td></tr>
                                 <tr><td><strong>Razón Social:</strong></td><td>${proveedor.razon_social}</td></tr>
                                 <tr><td><strong>Nombre Comercial:</strong></td><td>${proveedor.nombre_comercial || 'No especificado'}</td></tr>
-                                <tr><td><strong>RUT:</strong></td><td>${proveedor.rut}</td></tr>
+                                <tr><td><strong>RUC:</strong></td><td>${proveedor.rut}</td></tr>
                                 <tr><td><strong>Categorías:</strong></td><td>${proveedor.categoria_productos || 'No especificado'}</td></tr>
                             </table>
                             
