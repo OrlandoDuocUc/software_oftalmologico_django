@@ -246,6 +246,7 @@
                             <th>IVA</th>
                             <th>Total</th>
                             <th>Estado</th>
+                            <th class="text-center">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -259,9 +260,16 @@
                             <td>{{ c.iva_15|floatformat:2|add:c.iva_5|floatformat:2 }}</td>
                             <td><strong>{{ c.total_pagar|floatformat:2 }}</strong></td>
                             <td>{{ c.estado|default:"-" }}</td>
+                            <td class="text-center">
+                                <a href="{% url 'product_html:detalle_compra' c.compra_id %}" 
+                                   class="btn btn-sm btn-info" 
+                                   title="Ver detalle de compra">
+                                    <i class="fas fa-eye"></i> Ver
+                                </a>
+                            </td>
                         </tr>
                         {% empty %}
-                        <tr><td colspan="8" class="text-center py-3">Aún no hay compras registradas.</td></tr>
+                        <tr><td colspan="9" class="text-center py-3">Aún no hay compras registradas.</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>

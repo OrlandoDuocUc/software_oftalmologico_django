@@ -1,0 +1,276 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Detalle de Compra #{{ compra.compra_id }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Encabezado -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-1">
+                        <i class="fas fa-file-invoice me-2" style="color: var(--primary-color);"></i>
+                        Detalle de Orden de Compra #{{ compra.compra_id }}
+                    </h2>
+                    <p class="text-muted mb-0">Información completa de la orden de compra</p>
+                </div>
+                <div>
+                    <a href="{% url 'product_html:compras' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Volver a Compras
+                    </a>
+                    <button class="btn btn-primary ms-2" onclick="window.print();">
+                        <i class="fas fa-print me-2"></i>Imprimir
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Información de la Compra y Proveedor -->
+    <div class="row mb-4">
+        <!-- Información del Proveedor -->
+        <div class="col-md-6 mb-3">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header" style="background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); color: white;">
+                    <strong><i class="fas fa-building me-2"></i>Información del Proveedor</strong>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless mb-0">
+                        <tr>
+                            <td class="fw-bold" style="width: 40%;">Razón Social:</td>
+                            <td>{{ compra.proveedor.razon_social|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-bold">RUC/CI:</td>
+                            <td>{{ compra.ruc_ci|default:compra.proveedor.ruc|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-bold">Dirección:</td>
+                            <td>{{ compra.proveedor.direccion|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-bold">Teléfono:</td>
+                            <td>{{ compra.proveedor.telefono|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-bold">Email:</td>
+                            <td>{{ compra.proveedor.email|default:"-" }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Información de la Compra -->
+        <div class="col-md-6 mb-3">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header" style="background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); color: white;">
+                    <strong><i class="fas fa-receipt me-2"></i>Información de la Compra</strong>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless mb-0">
+                        <tr>
+                            <td class="fw-bold" style="width: 40%;">Número de Factura:</td>
+                            <td>{{ compra.numero_factura|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-bold">Fecha de Pedido:</td>
+                            <td>{{ compra.fecha_pedido|date:"d/m/Y"|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-bold">Fecha de Pago:</td>
+                            <td>{{ compra.fecha_pago|date:"d/m/Y"|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-bold">Forma de Pago:</td>
+                            <td>{{ compra.forma_pago|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-bold">Estado:</td>
+                            <td>
+                                {% if compra.estado == "Pagado" %}
+                                    <span class="badge bg-success">{{ compra.estado }}</span>
+                                {% elif compra.estado == "Pendiente" %}
+                                    <span class="badge bg-warning text-dark">{{ compra.estado }}</span>
+                                {% elif compra.estado == "Cancelado" %}
+                                    <span class="badge bg-danger">{{ compra.estado }}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ compra.estado|default:"-" }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detalle de Productos -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header" style="background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); color: white;">
+                    <strong><i class="fas fa-boxes me-2"></i>Detalle de Productos</strong>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="text-center">#</th>
+                                    <th>Código</th>
+                                    <th>Producto</th>
+                                    <th>Marca</th>
+                                    <th>Descripción</th>
+                                    <th class="text-center">Cantidad</th>
+                                    <th class="text-end">Precio Unit.</th>
+                                    <th class="text-center">IVA %</th>
+                                    <th class="text-end">Descuento</th>
+                                    <th class="text-end">Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for d in detalles %}
+                                <tr>
+                                    <td class="text-center">{{ forloop.counter }}</td>
+                                    <td><code>{{ d.codigo|default:d.producto.codigo|default:"-" }}</code></td>
+                                    <td>{{ d.producto.nombre|default:d.descripcion|default:"-" }}</td>
+                                    <td>{{ d.marca|default:d.producto.marca|default:"-" }}</td>
+                                    <td>{{ d.descripcion|default:"-" }}</td>
+                                    <td class="text-center">{{ d.cantidad|default:0 }}</td>
+                                    <td class="text-end">${{ d.precio_unitario|floatformat:2 }}</td>
+                                    <td class="text-center">{{ d.tarifa_iva|floatformat:0 }}%</td>
+                                    <td class="text-end">${{ d.descuento|floatformat:2|default:"0.00" }}</td>
+                                    <td class="text-end"><strong>${{ d.valor_total|floatformat:2 }}</strong></td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="10" class="text-center py-4 text-muted">
+                                        <i class="fas fa-inbox fa-2x mb-2"></i><br>
+                                        No hay productos en esta orden de compra
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resumen de Totales -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <!-- Observaciones -->
+            <div class="card h-100 shadow-sm">
+                <div class="card-header">
+                    <strong><i class="fas fa-sticky-note me-2"></i>Observaciones</strong>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0">{{ compra.observaciones|default:"Sin observaciones" }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header" style="background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); color: white;">
+                    <strong><i class="fas fa-calculator me-2"></i>Resumen de Totales</strong>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless mb-0">
+                        <tr>
+                            <td class="fw-bold">Subtotal (sin IVA):</td>
+                            <td class="text-end">${{ compra.subtotal_general|floatformat:2 }}</td>
+                        </tr>
+                        {% if iva_15 > 0 %}
+                        <tr>
+                            <td class="fw-bold">IVA 15%:</td>
+                            <td class="text-end">${{ iva_15|floatformat:2 }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if iva_5 > 0 %}
+                        <tr>
+                            <td class="fw-bold">IVA 5%:</td>
+                            <td class="text-end">${{ iva_5|floatformat:2 }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if iva_0 > 0 %}
+                        <tr>
+                            <td class="fw-bold">IVA 0%:</td>
+                            <td class="text-end">${{ iva_0|floatformat:2 }}</td>
+                        </tr>
+                        {% endif %}
+                        <tr>
+                            <td class="fw-bold">Total IVA:</td>
+                            <td class="text-end">${{ iva_total|floatformat:2 }}</td>
+                        </tr>
+                        <tr class="table-primary">
+                            <td class="fw-bold fs-5">TOTAL A PAGAR:</td>
+                            <td class="text-end fs-5 fw-bold">${{ compra.total_pagar|floatformat:2 }}</td>
+                        </tr>
+                        {% if compra.abono %}
+                        <tr>
+                            <td class="fw-bold text-success">Abono:</td>
+                            <td class="text-end text-success">${{ compra.abono|floatformat:2 }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if compra.saldo %}
+                        <tr>
+                            <td class="fw-bold text-danger">Saldo Pendiente:</td>
+                            <td class="text-end text-danger">${{ compra.saldo|floatformat:2 }}</td>
+                        </tr>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección de Firmas (para impresión) -->
+    <div class="row mt-5 d-print-block d-none">
+        <div class="col-12">
+            <div class="row">
+                <div class="col-6 text-center">
+                    <div style="border-top: 1px solid #000; width: 80%; margin: 0 auto; padding-top: 10px;">
+                        <strong>Recibido por</strong><br>
+                        <small>Nombre y Firma</small>
+                    </div>
+                </div>
+                <div class="col-6 text-center">
+                    <div style="border-top: 1px solid #000; width: 80%; margin: 0 auto; padding-top: 10px;">
+                        <strong>Autorizado por</strong><br>
+                        <small>Nombre y Firma</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    @media print {
+        .btn, .card-header {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        .d-print-block {
+            display: block !important;
+        }
+        .d-none {
+            display: none !important;
+        }
+        .d-print-block.d-none {
+            display: block !important;
+        }
+        .navbar, .sidebar, footer {
+            display: none !important;
+        }
+        .container-fluid {
+            padding: 0 !important;
+        }
+    }
+</style>
+{% endblock %}

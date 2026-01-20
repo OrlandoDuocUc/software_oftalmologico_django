@@ -550,6 +550,38 @@ def exportar_compras_excel(request):
 
 
 @login_required
+def detalle_compra(request, compra_id):
+    """
+    Vista para mostrar el detalle completo de una orden de compra.
+    """
+    try:
+        compra = Compra.objects.select_related("proveedor").prefetch_related("detalles__producto").get(compra_id=compra_id)
+    except Compra.DoesNotExist:
+        messages.error(request, "La orden de compra no existe.")
+        return redirect("product_html:compras")
+    
+    # Obtener los detalles de la compra
+    detalles = compra.detalles.all()
+    
+    # Calcular totales de IVA
+    iva_15 = float(compra.iva_15 or 0)
+    iva_5 = float(compra.iva_5 or 0)
+    iva_0 = float(compra.iva_0 or 0)
+    iva_total = iva_15 + iva_5 + iva_0
+    
+    context = {
+        "compra": compra,
+        "detalles": detalles,
+        "iva_15": iva_15,
+        "iva_5": iva_5,
+        "iva_0": iva_0,
+        "iva_total": iva_total,
+    }
+    
+    return render(request, "detalle_compra.html", context)
+
+
+@login_required
 def lista_proveedores(request):
     redirect_response = _require_admin(request)
     if redirect_response:
