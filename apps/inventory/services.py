@@ -123,12 +123,19 @@ class PurchaseService:
         with transaction.atomic():
             compra = Compra.objects.create(proveedor=proveedor, **self._compute_totals(header, detalles)["header"])
 
-            # Crear detalles
+            # Crear detalles y actualizar inventario
             for det_payload in self._compute_totals(header, detalles)["detalles"]:
                 producto = Product.objects.filter(producto_id=det_payload.pop("producto_id")).first()
                 if not producto:
                     raise ValueError("Producto no encontrado.")
-                CompraDetalle.objects.create(compra=compra, producto=producto, **det_payload)
+                
+                # Crear el detalle de compra
+                detalle = CompraDetalle.objects.create(compra=compra, producto=producto, **det_payload)
+                
+                # Actualizar el stock del producto en el inventario
+                cantidad_anterior = producto.cantidad or 0
+                producto.cantidad = cantidad_anterior + detalle.cantidad
+                producto.save()
 
         return compra
 
