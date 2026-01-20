@@ -94,6 +94,7 @@
                             <option value="Transferencia">Transferencia</option>
                             <option value="Tarjeta de débito">Tarjeta de débito</option>
                             <option value="Tarjeta de crédito">Tarjeta de crédito</option>
+                            <option value="Crédito">Crédito</option>
                         </select>
                     </div>
                     <div class="col-md-3">
@@ -432,20 +433,21 @@
 
     function registrarProductoNuevo() {
         if (!formProductoNuevo) return;
+        
         const data = {
-            nombre: formProductoNuevo.querySelector('#nuevoNombre').value.trim(),
-            distribuidor: formProductoNuevo.querySelector('#nuevoDistribuidor').value.trim(),
-            rubro: formProductoNuevo.querySelector('#nuevoRubro').value.trim(),
-            marca: formProductoNuevo.querySelector('#nuevoMarca').value.trim(),
-            material: formProductoNuevo.querySelector('#nuevoMaterial').value.trim(),
-            tipoArmazon: formProductoNuevo.querySelector('#nuevoTipoArmazon').value.trim(),
-            codigo: formProductoNuevo.querySelector('#nuevoCodigo').value.trim(),
-            color: formProductoNuevo.querySelector('#nuevoColor').value.trim(),
-            diametro1: formProductoNuevo.querySelector('#nuevoDiametro1').value.trim(),
-            diametro2: formProductoNuevo.querySelector('#nuevoDiametro2').value.trim(),
-            cantidad: parseFloat(formProductoNuevo.querySelector('#nuevoCantidad').value || '0'),
-            costoUnitario: parseFloat(formProductoNuevo.querySelector('#nuevoCostoUnitario').value || '0'),
-            descripcion: formProductoNuevo.querySelector('#nuevoDescripcion').value.trim(),
+            nombre: formProductoNuevo.querySelector('#nuevoNombre')?.value.trim() || '',
+            distribuidor: formProductoNuevo.querySelector('#nuevoDistribuidor')?.value.trim() || '',
+            rubro: formProductoNuevo.querySelector('#nuevoRubro')?.value.trim() || '',
+            marca: formProductoNuevo.querySelector('#nuevoMarca')?.value.trim() || '',
+            material: formProductoNuevo.querySelector('#nuevoMaterial')?.value.trim() || '',
+            tipoArmazon: formProductoNuevo.querySelector('#nuevoTipoArmazon')?.value.trim() || '',
+            codigo: formProductoNuevo.querySelector('#nuevoCodigo')?.value.trim() || '',
+            color: formProductoNuevo.querySelector('#nuevoColor')?.value.trim() || '',
+            diametro1: formProductoNuevo.querySelector('#nuevoDiametro1')?.value.trim() || '',
+            diametro2: formProductoNuevo.querySelector('#nuevoDiametro2')?.value.trim() || '',
+            cantidad: parseFloat(formProductoNuevo.querySelector('#nuevoCantidad')?.value || '1'),
+            costoUnitario: parseFloat(formProductoNuevo.querySelector('#nuevoCostoUnitario')?.value || '0'),
+            descripcion: formProductoNuevo.querySelector('#nuevoDescripcion')?.value.trim() || '',
         };
 
         if (!data.nombre || !data.rubro) {
@@ -492,7 +494,7 @@
         if (marcaInput) marcaInput.value = data.marca;
         if (codigoInput) codigoInput.value = data.codigo;
         if (cantInput) cantInput.value = data.cantidad;
-        if (precioInput) precioInput.value = data.costoUnitario;
+        if (precioInput) precioInput.value = data.costoUnitario.toFixed(2);
 
         const tbody = document.querySelector('#tabla-detalles tbody');
         tbody.appendChild(row);
@@ -500,8 +502,12 @@
         recalcular();
 
         formProductoNuevo.reset();
-        actualizarCostoConIva();
+        const costoIva = formProductoNuevo.querySelector('#nuevoCostoConIva');
+        if (costoIva) costoIva.value = '';
+        
         if (modalProductoInstance) modalProductoInstance.hide();
+        
+        alert(`Producto "${data.nombre}" agregado al detalle de compra.`);
     }
 
     document.addEventListener('input', function(e) {
@@ -555,6 +561,10 @@
                                         <input type="text" id="nuevoMarca" class="form-control" placeholder="Ej: Ray-Ban, Oakley">
                                     </div>
                                     <div class="mb-3">
+                                        <label class="form-label">Distribuidor</label>
+                                        <input type="text" id="nuevoDistribuidor" class="form-control" placeholder="Nombre del distribuidor">
+                                    </div>
+                                    <div class="mb-3">
                                         <label class="form-label">Material</label>
                                         <input type="text" id="nuevoMaterial" class="form-control" placeholder="Ej: Acetato, Metal, Titanio">
                                     </div>
@@ -578,17 +588,13 @@
                                         <input type="text" id="nuevoCodigo" class="form-control" placeholder="Código interno o del proveedor">
                                     </div>
                                     <div class="row">
-                                        <div class="col-md-4 mb-3">
-                                            <label class="form-label">Diámetro</label>
-                                            <input type="text" id="nuevoDiametro" class="form-control" placeholder="mm">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Diámetro 1</label>
+                                            <input type="text" id="nuevoDiametro1" class="form-control" placeholder="mm">
                                         </div>
-                                        <div class="col-md-4 mb-3">
-                                            <label class="form-label">Puente</label>
-                                            <input type="text" id="nuevoPuente" class="form-control" placeholder="mm">
-                                        </div>
-                                        <div class="col-md-4 mb-3">
-                                            <label class="form-label">Varilla</label>
-                                            <input type="text" id="nuevoVarilla" class="form-control" placeholder="mm">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Diámetro 2</label>
+                                            <input type="text" id="nuevoDiametro2" class="form-control" placeholder="mm">
                                         </div>
                                     </div>
                                     <div class="mb-3">
