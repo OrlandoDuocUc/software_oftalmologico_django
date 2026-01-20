@@ -13,7 +13,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from apps.sales.services import SaleService
 
-from .models import Proveedor
+from .models import Proveedor, Compra, CompraDetalle
 from .services import ProductService, PurchaseService
 from openpyxl import Workbook
 
@@ -348,7 +348,6 @@ def compras(request):
             descuentos = request.POST.getlist("detalle_descuento[]")
             tipos = request.POST.getlist("detalle_tipo[]")
             nuevos_nombres = request.POST.getlist("detalle_nuevo_nombre[]")
-            nuevos_distribuidores = request.POST.getlist("detalle_nuevo_distribuidor[]")
             nuevos_rubros = request.POST.getlist("detalle_nuevo_rubro[]")
             nuevos_marcas = request.POST.getlist("detalle_nuevo_marca[]")
             nuevos_codigos = request.POST.getlist("detalle_nuevo_codigo[]")
@@ -386,7 +385,6 @@ def compras(request):
                     detalle["nuevo_producto"] = {
                         "nombre": nombre_nuevo,
                         "rubro": rubro_nuevo,
-                        "distribuidor": nuevos_distribuidores[idx].strip() if idx < len(nuevos_distribuidores) else "",
                         "marca": nuevos_marcas[idx].strip() if idx < len(nuevos_marcas) else "",
                         "codigo": nuevos_codigos[idx].strip() if idx < len(nuevos_codigos) else "",
                         "material": nuevos_materiales[idx].strip() if idx < len(nuevos_materiales) else "",
@@ -418,7 +416,7 @@ def compras(request):
                         "fecha": datetime.now(),
                         "nombre": nuevo_payload["nombre"],
                         "rubro": nuevo_payload["rubro"],
-                        "distribuidor": nuevo_payload.get("distribuidor") or (proveedor_obj.razon_social if proveedor_obj else None),
+                        "distribuidor": proveedor_obj.razon_social if proveedor_obj else None,
                         "marca": nuevo_payload["marca"],
                         "material": nuevo_payload["material"],
                         "tipo_armazon": nuevo_payload["tipo_armazon"],

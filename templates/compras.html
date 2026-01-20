@@ -311,10 +311,6 @@
                                         <input type="text" id="nuevoMarca" class="form-control" placeholder="Ej: Ray-Ban, Oakley">
                                     </div>
                                     <div class="mb-3">
-                                        <label class="form-label">Distribuidor</label>
-                                        <input type="text" id="nuevoDistribuidor" class="form-control" placeholder="Nombre del distribuidor">
-                                    </div>
-                                    <div class="mb-3">
                                         <label class="form-label">Material</label>
                                         <input type="text" id="nuevoMaterial" class="form-control" placeholder="Ej: Acetato, Metal, Titanio">
                                     </div>
@@ -423,7 +419,6 @@
                 <input type="hidden" name="detalle_tipo[]" class="input-tipo-producto" value="existente">
                 <input type="hidden" name="detalle_descripcion[]" class="detalle-descripcion" value="">
                 <input type="hidden" name="detalle_nuevo_nombre[]" class="hidden-nuevo nuevo-nombre" value="">
-                <input type="hidden" name="detalle_nuevo_distribuidor[]" class="hidden-nuevo nuevo-distribuidor" value="">
                 <input type="hidden" name="detalle_nuevo_rubro[]" class="hidden-nuevo nuevo-rubro" value="">
                 <input type="hidden" name="detalle_nuevo_marca[]" class="hidden-nuevo nuevo-marca" value="">
                 <input type="hidden" name="detalle_nuevo_material[]" class="hidden-nuevo nuevo-material" value="">
@@ -568,7 +563,6 @@
         
         const data = {
             nombre: formProductoNuevo.querySelector('#nuevoNombre')?.value.trim() || '',
-            distribuidor: formProductoNuevo.querySelector('#nuevoDistribuidor')?.value.trim() || '',
             rubro: formProductoNuevo.querySelector('#nuevoRubro')?.value.trim() || '',
             marca: formProductoNuevo.querySelector('#nuevoMarca')?.value.trim() || '',
             material: formProductoNuevo.querySelector('#nuevoMaterial')?.value.trim() || '',
@@ -607,7 +601,6 @@
         }
 
         row.querySelector('.nuevo-nombre').value = data.nombre;
-        row.querySelector('.nuevo-distribuidor').value = data.distribuidor;
         row.querySelector('.nuevo-rubro').value = data.rubro;
         row.querySelector('.nuevo-marca').value = data.marca;
         row.querySelector('.nuevo-material').value = data.material;
