@@ -406,11 +406,22 @@ def compras(request):
                 messages.error(request, "Agrega al menos un detalle de producto.")
             else:
                 # Calcular el total antes de validar el abono
-                total_temp = sum(
-                    Decimal(det.get("cantidad", 0)) * Decimal(det.get("precio_unitario", 0)) * 
-                    (Decimal(1) + Decimal(det.get("tarifa_iva", 0)))
-                    for det in detalles
-                )
+                total_temp = Decimal(0)
+                for det in detalles:
+                    cantidad = Decimal(det.get("cantidad", 0))
+                    precio_unitario = Decimal(det.get("precio_unitario", 0))
+                    tarifa_iva = Decimal(det.get("tarifa_iva", 0))
+                    descuento = Decimal(det.get("descuento", 0))
+                    
+                    # Subtotal sin IVA ni descuento
+                    subtotal = cantidad * precio_unitario
+                    # Aplicar descuento
+                    subtotal_con_descuento = subtotal - descuento
+                    # Aplicar IVA
+                    total_linea = subtotal_con_descuento * (Decimal(1) + tarifa_iva)
+                    
+                    total_temp += total_linea
+                
                 abono = header.get("abono") or Decimal(0)
                 
                 # Validar que el abono no sea mayor al total
