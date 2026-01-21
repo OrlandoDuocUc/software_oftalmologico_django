@@ -405,6 +405,17 @@ def compras(request):
             if not detalles:
                 messages.error(request, "Agrega al menos un detalle de producto.")
             else:
+                # DEBUG: Imprimir detalles para verificar
+                print("=" * 80)
+                print(f"TOTAL DE DETALLES RECIBIDOS: {len(detalles)}")
+                for i, det in enumerate(detalles):
+                    print(f"\nDETALLE {i+1}:")
+                    print(f"  Cantidad: {det.get('cantidad')}")
+                    print(f"  Precio unitario: {det.get('precio_unitario')}")
+                    print(f"  Tarifa IVA: {det.get('tarifa_iva')}")
+                    print(f"  Descuento: {det.get('descuento')}")
+                print("=" * 80)
+                
                 # Calcular el total antes de validar el abono
                 total_temp = Decimal(0)
                 for det in detalles:
@@ -420,7 +431,12 @@ def compras(request):
                     # Aplicar IVA
                     total_linea = subtotal_con_descuento * (Decimal(1) + tarifa_iva)
                     
+                    print(f"Línea: cantidad={cantidad}, precio={precio_unitario}, descuento={descuento}, iva={tarifa_iva}, total_linea={total_linea}")
+                    
                     total_temp += total_linea
+                
+                print(f"\nTOTAL CALCULADO: ${total_temp:.2f}")
+                print("=" * 80)
                 
                 abono = header.get("abono") or Decimal(0)
                 
@@ -493,6 +509,14 @@ def compras(request):
                 messages.success(request, f"Compra #{compra.compra_id} registrada correctamente.")
                 return redirect("product_html:compras")
         except Exception as exc:
+            import traceback
+            print("=" * 80)
+            print("ERROR AL REGISTRAR COMPRA:")
+            print(f"Tipo de error: {type(exc).__name__}")
+            print(f"Mensaje: {exc}")
+            print("\nTraceback completo:")
+            traceback.print_exc()
+            print("=" * 80)
             messages.error(request, f"Error al registrar la compra: {exc}")
 
     return render(
