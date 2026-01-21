@@ -402,6 +402,58 @@
     let modalProductoInstance = null;
     let formProductoNuevo = null;
 
+    function filtrarProductosPorProveedor() {
+        const selectProv = document.getElementById('select-proveedor');
+        const proveedorSeleccionado = selectProv.value;
+        
+        // Si no hay proveedor seleccionado, mostrar todos los productos
+        if (!proveedorSeleccionado) {
+            document.querySelectorAll('.detalle-producto option').forEach(option => {
+                if (option.value !== '') {
+                    option.style.display = '';
+                }
+            });
+            return;
+        }
+
+        // Obtener la razón social del proveedor seleccionado
+        const optionProv = selectProv.options[selectProv.selectedIndex];
+        const razonSocialProveedor = optionProv.text.split(' - ')[0].trim();
+
+        // Filtrar productos en todas las filas existentes
+        document.querySelectorAll('.detalle-producto').forEach(selectProducto => {
+            const selectedValue = selectProducto.value;
+            
+            selectProducto.querySelectorAll('option').forEach(option => {
+                if (option.value === '') {
+                    option.style.display = '';
+                    return;
+                }
+                
+                const distribuidorProducto = option.getAttribute('data-distribuidor') || '';
+                
+                // Mostrar solo productos que coincidan con el proveedor o que no tengan distribuidor
+                if (distribuidorProducto === '' || distribuidorProducto === razonSocialProveedor) {
+                    option.style.display = '';
+                } else {
+                    option.style.display = 'none';
+                    // Si el producto actual estaba seleccionado y ya no es válido, deseleccionar
+                    if (option.value === selectedValue) {
+                        selectProducto.value = '';
+                        // Limpiar los campos relacionados
+                        const row = selectProducto.closest('tr');
+                        if (row) {
+                            row.querySelector('.input-marca').value = '';
+                            row.querySelector('.input-codigo').value = '';
+                            row.querySelector('.input-costo').value = '0.00';
+                            row.querySelector('.input-descripcion').value = '';
+                        }
+                    }
+                }
+            });
+        });
+    }
+
     function crearFilaDetalle() {
         const row = document.createElement('tr');
         row.innerHTML = `
@@ -414,7 +466,8 @@
                                 data-marca="{{ p.marca|default_if_none:'' }}" 
                                 data-codigo="{{ p.codigo|default_if_none:'' }}"
                                 data-costo="{{ p.costo_unitario|default:'0' }}"
-                                data-descripcion="{{ p.descripcion|default_if_none:'' }}">
+                                data-descripcion="{{ p.descripcion|default_if_none:'' }}"
+                                data-distribuidor="{{ p.distribuidor|default_if_none:'' }}">
                             {{ p.nombre }} ({{ p.codigo|default:'N/A' }})
                         </option>
                         {% endfor %}
@@ -434,6 +487,7 @@
                 <input type="hidden" name="detalle_nuevo_color[]" class="hidden-nuevo nuevo-color" value="">
                 <input type="hidden" name="detalle_nuevo_cantidad[]" class="hidden-nuevo nuevo-cantidad" value="">
                 <input type="hidden" name="detalle_nuevo_costo_unitario[]" class="hidden-nuevo nuevo-costo-unitario" value="">
+                <input type="hidden" name="detalle_nuevo_distribuidor[]" class="hidden-nuevo nuevo-distribuidor" value="">
             </td>
             <td><input type="text" name="detalle_marca[]" class="form-control detalle-marca" placeholder="Marca" readonly></td>
             <td><input type="text" name="detalle_codigo[]" class="form-control detalle-codigo" placeholder="Código" readonly></td>
@@ -465,6 +519,7 @@
         const row = crearFilaDetalle();
         tbody.appendChild(row);
         inicializarEventosFila(row);
+        filtrarProductosPorProveedor(); // Aplicar filtro a la nueva fila
         recalcular();
     }
 
@@ -606,6 +661,20 @@
     function registrarProductoNuevo() {
         if (!formProductoNuevo) return;
         
+        // Obtener el proveedor seleccionado para asignar como distribuidor
+        const selectProv = document.getElementById('select-proveedor');
+        let distribuidorNuevo = '';
+        
+        if (selectProv && selectProv.value) {
+            const optProv = selectProv.options[selectProv.selectedIndex];
+            distribuidorNuevo = optProv.text.split(' - ')[0].trim();
+        }
+        
+        if (!distribuidorNuevo) {
+            alert('Debes seleccionar un proveedor antes de crear un nuevo producto.');
+            return;
+        }
+        
         const data = {
             nombre: formProductoNuevo.querySelector('#nuevoNombre')?.value.trim() || '',
             rubro: formProductoNuevo.querySelector('#nuevoRubro')?.value.trim() || '',
@@ -619,6 +688,7 @@
             cantidad: parseFloat(formProductoNuevo.querySelector('#nuevoCantidad')?.value || '1'),
             costoUnitario: parseFloat(formProductoNuevo.querySelector('#nuevoCostoUnitario')?.value || '0'),
             descripcion: formProductoNuevo.querySelector('#nuevoDescripcion')?.value.trim() || '',
+            distribuidor: distribuidorNuevo,
         };
 
         if (!data.nombre || !data.rubro) {
@@ -656,6 +726,7 @@
         row.querySelector('.nuevo-color').value = data.color;
         row.querySelector('.nuevo-cantidad').value = data.cantidad;
         row.querySelector('.nuevo-costo-unitario').value = data.costoUnitario;
+        row.querySelector('.nuevo-distribuidor').value = data.distribuidor;
         row.querySelector('.detalle-descripcion').value = data.descripcion;
 
         const marcaInput = row.querySelector('.detalle-marca');
@@ -710,7 +781,10 @@
         autocompletarRuc();
         const selectProv = document.getElementById('select-proveedor');
         if (selectProv) {
-            selectProv.addEventListener('change', autocompletarRuc);
+            selectProv.addEventListener('change', function() {
+                autocompletarRuc();
+                filtrarProductosPorProveedor();
+            });
         }
         
         // Conectar botón del modal

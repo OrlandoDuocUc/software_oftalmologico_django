@@ -13,7 +13,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from apps.sales.services import SaleService
 
-from .models import Proveedor, Compra, CompraDetalle
+from .models import Proveedor, Compra, CompraDetalle, Product
 from .services import ProductService, PurchaseService
 from openpyxl import Workbook
 
@@ -356,6 +356,7 @@ def compras(request):
             nuevos_diametro_1 = request.POST.getlist("detalle_nuevo_diametro_1[]")
             nuevos_diametro_2 = request.POST.getlist("detalle_nuevo_diametro_2[]")
             nuevos_colores = request.POST.getlist("detalle_nuevo_color[]")
+            nuevos_distribuidores = request.POST.getlist("detalle_nuevo_distribuidor[]")
 
             filas_detalle = len(productos_ids)
             for idx in range(filas_detalle):
@@ -392,6 +393,7 @@ def compras(request):
                         "diametro_1": nuevos_diametro_1[idx].strip() if idx < len(nuevos_diametro_1) else "",
                         "diametro_2": nuevos_diametro_2[idx].strip() if idx < len(nuevos_diametro_2) else "",
                         "color": nuevos_colores[idx].strip() if idx < len(nuevos_colores) else "",
+                        "distribuidor": nuevos_distribuidores[idx].strip() if idx < len(nuevos_distribuidores) else "",
                     }
                 else:
                     if not prod_id_raw:
@@ -433,11 +435,14 @@ def compras(request):
                     if nuevo_payload is None:
                         continue
 
+                    # Usar el distribuidor del frontend o el proveedor como fallback
+                    distribuidor_final = nuevo_payload.get("distribuidor") or (proveedor_obj.razon_social if proveedor_obj else None)
+
                     product_data = {
                         "fecha": datetime.now(),
                         "nombre": nuevo_payload["nombre"],
                         "rubro": nuevo_payload["rubro"],
-                        "distribuidor": proveedor_obj.razon_social if proveedor_obj else None,
+                        "distribuidor": distribuidor_final,
                         "marca": nuevo_payload["marca"],
                         "material": nuevo_payload["material"],
                         "tipo_armazon": nuevo_payload["tipo_armazon"],
@@ -457,6 +462,21 @@ def compras(request):
                         det["marca"] = nuevo_producto.marca or ""
                     if not det.get("codigo"):
                         det["codigo"] = nuevo_producto.codigo or ""
+
+                # Validar que todos los productos pertenezcan al mismo proveedor
+                if proveedor_obj:
+                    proveedor_razon_social = proveedor_obj.razon_social
+                    for det in detalles:
+                        producto_id = det.get("producto_id")
+                        if producto_id:
+                            producto = Product.objects.filter(producto_id=producto_id).first()
+                            if producto and producto.distribuidor:
+                                if producto.distribuidor != proveedor_razon_social:
+                                    raise ValueError(
+                                        f"El producto '{producto.nombre}' pertenece al distribuidor '{producto.distribuidor}', "
+                                        f"pero estás creando una orden para '{proveedor_razon_social}'. "
+                                        f"Todos los productos deben ser del mismo proveedor."
+                                    )
 
                 compra = purchase_service.create_purchase(header, detalles)
                 messages.success(request, f"Compra #{compra.compra_id} registrada correctamente.")
