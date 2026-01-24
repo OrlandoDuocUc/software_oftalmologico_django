@@ -363,10 +363,13 @@ def compras(request):
             
             print("=" * 80)
             print(f"DEBUG - PROCESANDO DETALLES:")
-            print(f"  Total de tipos: {len(tipos)}")
+            print(f"  Total de filas a procesar: {filas_detalle}")
+            print(f"  Total de tipos recibidos: {len(tipos)}")
+            print(f"  Contenido de tipos: {tipos}")
             print(f"  Total de productos_ids: {len(productos_ids)}")
-            print(f"  Tipos: {tipos}")
-            print(f"  Productos IDs: {productos_ids}")
+            print(f"  Contenido de productos_ids: {productos_ids}")
+            print(f"  Total de nuevos_nombres: {len(nuevos_nombres)}")
+            print(f"  Contenido de nuevos_nombres: {nuevos_nombres}")
             print("=" * 80)
             
             for idx in range(filas_detalle):

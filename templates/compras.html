@@ -802,6 +802,16 @@
                 console.log('🚀 Enviando formulario...');
                 const formData = new FormData(this);
                 
+                // Validar que haya al menos un producto
+                const tiposEnviados = formData.getAll('detalle_tipo[]');
+                console.log(`📦 Total de productos a enviar: ${tiposEnviados.length}`);
+                console.log('📋 Tipos:', tiposEnviados);
+                
+                if (tiposEnviados.length === 0) {
+                    alert('⚠️ ERROR: No hay productos en el detalle. Agrega al menos un producto.');
+                    return;
+                }
+                
                 // Crear un contenedor para mostrar los logs en el HTML
                 let debugDiv = document.getElementById('debug-output');
                 if (!debugDiv) {
