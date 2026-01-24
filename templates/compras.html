@@ -708,7 +708,7 @@
         if (select) {
             select.innerHTML = '<option value="">Producto nuevo registrado</option>';
             select.value = '';  // Asegurar que el valor es vacío
-            // NO deshabilitar el select para que se envíe en el form
+            select.removeAttribute('required');  // ✅ Quitar validación HTML5 para productos nuevos
         }
         if (tipoInput) tipoInput.value = 'nuevo';
         if (badge) {
