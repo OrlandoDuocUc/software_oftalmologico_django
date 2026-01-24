@@ -15,6 +15,9 @@ staticfiles/
 media/
 
 # IDE
-.vscode/
 .idea/
 *.log
+temp_auto_push.bat
+temp_interactive_push.bat
+.gitignore
+branch_structure.json
