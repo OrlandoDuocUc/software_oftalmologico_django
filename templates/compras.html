@@ -66,7 +66,9 @@
                         <select name="proveedor_id" class="form-select" id="select-proveedor" required>
                             <option value="">Seleccione</option>
                             {% for prov in proveedores %}
-                            <option value="{{ prov.proveedor_id }}" data-ruc="{{ prov.rut }}">{{ prov.razon_social }}</option>
+                            <option value="{{ prov.proveedor_id }}" 
+                                    data-ruc="{{ prov.rut }}" 
+                                    data-razon-social="{{ prov.razon_social }}">{{ prov.razon_social }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -406,25 +408,32 @@
         const selectProv = document.getElementById('select-proveedor');
         const proveedorSeleccionado = selectProv.value;
         
-        // Si no hay proveedor seleccionado, mostrar todos los productos
+        // Si no hay proveedor seleccionado, ocultar todos los productos (forzar a seleccionar proveedor primero)
         if (!proveedorSeleccionado) {
-            document.querySelectorAll('.detalle-producto option').forEach(option => {
-                if (option.value !== '') {
-                    option.style.display = '';
-                }
+            document.querySelectorAll('.detalle-producto').forEach(selectProducto => {
+                selectProducto.querySelectorAll('option').forEach(option => {
+                    if (option.value !== '') {
+                        option.style.display = 'none';
+                    }
+                });
+                selectProducto.value = '';
             });
             return;
         }
 
-        // Obtener la razón social del proveedor seleccionado
+        // Obtener la razón social del proveedor seleccionado desde el atributo data
         const optionProv = selectProv.options[selectProv.selectedIndex];
-        const razonSocialProveedor = optionProv.text.split(' - ')[0].trim();
+        const razonSocialProveedor = optionProv.getAttribute('data-razon-social');
+
+        if (!razonSocialProveedor) return;
 
         // Filtrar productos en todas las filas existentes
         document.querySelectorAll('.detalle-producto').forEach(selectProducto => {
             const selectedValue = selectProducto.value;
+            let selectedStillValid = false;
             
             selectProducto.querySelectorAll('option').forEach(option => {
+                // Siempre mostrar la opción vacía "Seleccione"
                 if (option.value === '') {
                     option.style.display = '';
                     return;
@@ -432,25 +441,29 @@
                 
                 const distribuidorProducto = option.getAttribute('data-distribuidor') || '';
                 
-                // Mostrar solo productos que coincidan con el proveedor o que no tengan distribuidor
-                if (distribuidorProducto === '' || distribuidorProducto === razonSocialProveedor) {
+                // Mostrar SOLO productos que coincidan exactamente con el proveedor
+                if (distribuidorProducto === razonSocialProveedor) {
                     option.style.display = '';
+                    if (option.value === selectedValue) {
+                        selectedStillValid = true;
+                    }
                 } else {
                     option.style.display = 'none';
-                    // Si el producto actual estaba seleccionado y ya no es válido, deseleccionar
-                    if (option.value === selectedValue) {
-                        selectProducto.value = '';
-                        // Limpiar los campos relacionados
-                        const row = selectProducto.closest('tr');
-                        if (row) {
-                            row.querySelector('.input-marca').value = '';
-                            row.querySelector('.input-codigo').value = '';
-                            row.querySelector('.input-costo').value = '0.00';
-                            row.querySelector('.input-descripcion').value = '';
-                        }
-                    }
                 }
             });
+            
+            // Si el producto seleccionado ya no es válido, limpiar la selección
+            if (selectedValue && !selectedStillValid) {
+                selectProducto.value = '';
+                const row = selectProducto.closest('tr');
+                if (row) {
+                    row.querySelector('.detalle-marca')?.setAttribute('value', '');
+                    row.querySelector('.detalle-codigo')?.setAttribute('value', '');
+                    row.querySelector('.detalle-precio')?.setAttribute('value', '0.00');
+                    row.querySelector('.detalle-descripcion')?.setAttribute('value', '');
+                    recalcular();
+                }
+            }
         });
     }
 
@@ -743,6 +756,7 @@
         const tbody = document.querySelector('#tabla-detalles tbody');
         tbody.appendChild(row);
         inicializarEventosFila(row);
+        filtrarProductosPorProveedor();  // Aplicar filtro al agregar nueva fila
         recalcular();
 
         formProductoNuevo.reset();
@@ -787,6 +801,9 @@
                 filtrarProductosPorProveedor();
             });
         }
+        
+        // Aplicar filtro inicial (ocultar productos si no hay proveedor seleccionado)
+        filtrarProductosPorProveedor();
         
         // Conectar botón del modal
         const btnNuevo = document.getElementById('btnGuardarProductoNuevo');
