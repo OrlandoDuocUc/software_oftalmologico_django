@@ -358,7 +358,17 @@ def compras(request):
             nuevos_colores = request.POST.getlist("detalle_nuevo_color[]")
             nuevos_distribuidores = request.POST.getlist("detalle_nuevo_distribuidor[]")
 
-            filas_detalle = len(productos_ids)
+            # Usar tipos como referencia porque siempre tiene valor (existente o nuevo)
+            filas_detalle = len(tipos)
+            
+            print("=" * 80)
+            print(f"DEBUG - PROCESANDO DETALLES:")
+            print(f"  Total de tipos: {len(tipos)}")
+            print(f"  Total de productos_ids: {len(productos_ids)}")
+            print(f"  Tipos: {tipos}")
+            print(f"  Productos IDs: {productos_ids}")
+            print("=" * 80)
+            
             for idx in range(filas_detalle):
                 tipo = tipos[idx] if idx < len(tipos) else "existente"
                 prod_id_raw = productos_ids[idx] if idx < len(productos_ids) else ""
