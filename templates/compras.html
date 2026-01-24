@@ -707,7 +707,8 @@
 
         if (select) {
             select.innerHTML = '<option value="">Producto nuevo registrado</option>';
-            select.disabled = true;
+            select.value = '';  // Asegurar que el valor es vacío
+            // NO deshabilitar el select para que se envíe en el form
         }
         if (tipoInput) tipoInput.value = 'nuevo';
         if (badge) {
@@ -814,9 +815,11 @@
                 // NO prevenir el envío, solo mostrar logs
                 console.log('✅ Formulario se enviará normalmente...');
             });
-                
-                // Crear un contenedor para mostrar los logs en el HTML
-                let debugDiv = document.getElementById('debug-output');
+        }
+    });
+</script>
+
+{% endblock %}
                 if (!debugDiv) {
                     debugDiv = document.createElement('div');
                     debugDiv.id = 'debug-output';
